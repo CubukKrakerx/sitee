@@ -1,22 +1,30 @@
+/* ==== GENEL TASARIM ==== */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f4f4f4, #e0e0e0);
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin: 0;
+    min-height: 100vh;
+    padding: 20px;
 }
 
 h1 {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    color: #333;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
 }
 
+/* ==== OYUN ALANI ==== */
 .game-container {
     display: grid;
     grid-template-columns: repeat(10, 40px); /* 10 sütun */
-    grid-gap: 10px;
+    grid-gap: 8px;
     justify-content: center;
 }
 
+/* ==== KART TASARIMI ==== */
 .card {
     width: 40px;
     height: 40px;
@@ -27,23 +35,58 @@ h1 {
     font-size: 15px;
     color: white;
     cursor: pointer;
-    position: relative;
+    border-radius: 6px;
+    transition: transform 0.2s, background-color 0.3s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
+.card:hover {
+    transform: scale(1.15);
+}
+
+/* ==== SEMBOL ==== */
 .card-symbol {
-    display: none; /* Başlangıçta sembolü gizle */
+    display: none;
     font-size: 15px;
 }
 
 .card.flipped {
     background-color: #2ecc71;
+    transform: rotateY(180deg);
 }
 
 .card.flipped .card-symbol {
-    display: block; /* Kart açıldığında sembolü göster */
+    display: block;
 }
 
 .card.matched {
-    background-color: #e74c3c; /* Eşleşen kartların rengi */
-    cursor: default; /* Eşleşen kartlar tıklanamaz */
+    background-color: #e74c3c;
+    cursor: default;
+    opacity: 0.85;
+    transform: scale(0.9);
+}
+
+/* ==== MOBİL UYUM ==== */
+@media (max-width: 1200px) {
+    .game-container {
+        grid-template-columns: repeat(8, 40px); /* Orta ekranlarda 8 sütun */
+    }
+}
+
+@media (max-width: 768px) {
+    .game-container {
+        grid-template-columns: repeat(6, 40px); /* Tablet */
+    }
+}
+
+@media (max-width: 480px) {
+    .game-container {
+        grid-template-columns: repeat(5, 35px); /* Telefon */
+        grid-gap: 6px;
+    }
+    .card {
+        width: 35px;
+        height: 35px;
+        font-size: 13px;
+    }
 }

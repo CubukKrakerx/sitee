@@ -1,21 +1,30 @@
+/* ==== GENEL TASARIM ==== */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f4f4f4, #e0e0e0);
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin: 0;
+    min-height: 100vh;
+    padding: 20px;
 }
 
 h1 {
     margin-bottom: 20px;
+    color: #333;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.1);
 }
 
+/* ==== OYUN ALANI ==== */
 .game-container {
     display: grid;
     grid-template-columns: repeat(8, 100px); /* 8 sütun */
-    grid-gap: 10px;
+    grid-gap: 12px;
+    justify-content: center;
 }
 
+/* ==== KART TASARIMI ==== */
 .card {
     width: 100px;
     height: 100px;
@@ -23,26 +32,76 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 24px;
+    font-size: 26px;
     color: white;
     cursor: pointer;
+    border-radius: 10px;
     position: relative;
+    transition: transform 0.3s, background-color 0.3s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
+.card:hover {
+    transform: scale(1.05);
+}
+
+/* ==== SEMBOL ==== */
 .card-symbol {
-    display: none; /* Başlangıçta sembolü gizle */
-    font-size: 24px;
+    display: none;
+    font-size: 28px;
 }
 
+/* ==== AÇILMIŞ KART ==== */
 .card.flipped {
     background-color: #2ecc71;
+    transform: rotateY(180deg);
 }
 
 .card.flipped .card-symbol {
-    display: block; /* Kart açıldığında sembolü göster */
+    display: block;
 }
 
+/* ==== EŞLEŞMİŞ KART ==== */
 .card.matched {
-    background-color: #e74c3c; /* Eşleşen kartların rengi */
-    cursor: default; /* Eşleşen kartlar tıklanamaz */
+    background-color: #e74c3c;
+    cursor: default;
+    opacity: 0.85;
+    transform: scale(0.95);
+}
+
+/* ==== MOBİL UYUM ==== */
+@media (max-width: 1200px) {
+    .game-container {
+        grid-template-columns: repeat(6, 90px); /* Orta ekranlarda 6 sütun */
+        grid-gap: 10px;
+    }
+    .card {
+        width: 90px;
+        height: 90px;
+        font-size: 22px;
+    }
+}
+
+@media (max-width: 768px) {
+    .game-container {
+        grid-template-columns: repeat(4, 80px); /* Tablet */
+        grid-gap: 8px;
+    }
+    .card {
+        width: 80px;
+        height: 80px;
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-container {
+        grid-template-columns: repeat(3, 70px); /* Telefon */
+        grid-gap: 6px;
+    }
+    .card {
+        width: 70px;
+        height: 70px;
+        font-size: 18px;
+    }
 }

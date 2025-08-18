@@ -1,25 +1,45 @@
-.bosluk
-{
-    margin-top:800px ;
+.bosluk {
+    margin-top: 800px;
 }
 
-.uzaklastirma
-{
+.uzaklastirma {
     margin: 20px;
     margin-top: 50px;
     height: 50px;
     width: 300px;
 }
 
-.buton
-{
+.buton {
     font-weight: bold;
     border-radius: 6px;
 }
 
-.yazi
-{
-    font-size: 20px;
+.yazi {
+    width: 97%;
+    height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;  /* dikeyde ortala */
+    align-items: center;      /* yatayda ortala */
+    background: linear-gradient(135deg, #a8ff78, #78ffd6); /* arka plan geçiş efekti */
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    color: #222;
+    text-align: center;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* modern font */
+}
+
+.yazi h1 {
+    font-size: 28px;
+    margin: 0;
+    color: #1a1a1a;
+}
+
+.yazi p {
+    font-size: 18px;
+    margin: 5px 0 0 0;
+    line-height: 1.5;
 }
 
 body {
@@ -36,12 +56,11 @@ body {
     border-radius: 10px;
     border: none;
     background-color: lightblue;
-    transition:background-color 0.3s ease;
+    transition: background-color 0.3s ease;
     cursor: pointer;
 }
 
-.button:hover
-{
+.button:hover {
     background-color: red;
 }
 
@@ -72,4 +91,56 @@ body {
 
 .volume-slider {
     margin-left: 10px;
+}
+
+/* 📱 Mobil ve tablet uyumluluk */
+@media (max-width: 768px) {
+    .yazi {
+        width: 95%;
+        height: auto;         /* sabit 100px olmasın */
+        padding: 15px;
+    }
+
+    .yazi h1 {
+        font-size: 22px;
+    }
+
+    .yazi p {
+        font-size: 16px;
+    }
+
+    .button {
+        width: 90%;          /* tam genişlik buton */
+        height: 45px;
+        margin: 10px auto;
+        display: block;      /* alt alta gelsin */
+        font-size: 16px;
+    }
+
+    .music-controls {
+        bottom: 10px;
+        padding: 8px;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .volume-slider {
+        width: 100%;
+    }
+}
+
+/* Daha küçük ekranlar için (ör: telefon < 480px) */
+@media (max-width: 480px) {
+    .yazi h1 {
+        font-size: 18px;
+    }
+
+    .yazi p {
+        font-size: 14px;
+    }
+
+    .button {
+        font-size: 14px;
+        height: 40px;
+    }
 }

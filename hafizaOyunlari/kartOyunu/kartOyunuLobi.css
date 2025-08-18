@@ -1,3 +1,4 @@
+/* ==== GENEL AYARLAR ==== */
 body {
     display: flex;
     justify-content: center;
@@ -5,51 +6,61 @@ body {
     height: 100vh;
     margin: 0;
     background-color: #f0f0f0; 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* ==== BUTON KONTEYNERİ ==== */
 .button-container {
     display: flex;
     flex-direction: column; 
     align-items: center; 
-    gap: 20px; 
+    gap: 20px; /* Butonlar arası boşluk */
 }
 
+/* ==== ORTAK BUTON STİLİ ==== */
 .butonlar {
     font-weight: bold;
-    border-radius: 6px;
+    border-radius: 8px;
     height: 50px;
-    width: 200px;
+    width: 220px;
     cursor: pointer;
-    background-color: #4CAF50; 
-    color: white; 
     border: none; 
-    transition: background-color 0.3s; 
+    color: white; 
+    transition: background-color 0.3s, transform 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
 
+/* Hover efekti */
 .butonlar:hover {
+    transform: scale(1.05);
+}
+
+/* ==== ZORLUK DERECELERİ ==== */
+.butonimkansiz { background-color: #ff0000; }
+.butonimkansiz:hover { background-color: #cc0000; }
+
+.butonzor { background-color: #ff6600; }
+.butonzor:hover { background-color: #cc5200; }
+
+.butonorta { background-color: #ffee00; color: #222; }
+.butonorta:hover { background-color: #e6d600; }
+
+.butonkolay { background-color: #00b7ff; }
+.butonkolay:hover { background-color: #0099cc; }
+
+/* ==== ALT BUTON (örn. geri dön) ==== */
+.alt-buton {
+    margin-top: 30px;
+    background-color: #4CAF50;
+}
+.alt-buton:hover {
     background-color: #45a049;
 }
 
-.butonimkansiz
-{
-    background-color: #ff0000;
-}
-
-.butonzor
-{
-    background-color: #ff6600;
-}
-
-.butonorta
-{
-    background-color: #ffee00;
-}
-
-.butonkolay
-{
-    background-color: #00b7ff;
-}
-
-.alt-buton {
-    margin-top: 30px;
+/* ==== MOBİL UYUM ==== */
+@media (max-width: 600px) {
+    .butonlar {
+        width: 80%;
+        font-size: 16px;
+    }
 }
