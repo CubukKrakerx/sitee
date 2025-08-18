@@ -14,6 +14,7 @@
             height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
+            transition: background-color 1s ease;
         }
 
         .button {
@@ -28,17 +29,25 @@
         }
 
         .active {
-            background-color: orange ;
+            background-color: orange;
         }
 
         .correct {
-            background-color: green; /* Doğru buton yeşil olacak */
+            background-color: green;
         }
 
         #message {
             font-size: 24px;
             margin-top: 20px;
+            display: none;
+        }
+
+        #restartBtn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
             display: none; /* Başlangıçta gizli */
+            cursor: pointer;
         }
 
         #level {
@@ -48,7 +57,7 @@
         #turnMessage {
             font-size: 18px;
             margin-top: 10px;
-            display: none; /* Başlangıçta gizli */
+            display: none;
         }
     </style>
 </head>
@@ -66,13 +75,14 @@
         <button class="button" data-index="7"></button>
     </div>
     <div id="message"></div>
+    <button id="restartBtn">Tekrar Başla</button>
 
     <script>
-
         const buttons = document.querySelectorAll('.button');
         const messageDiv = document.getElementById('message');
         const levelDiv = document.getElementById('level');
         const turnMessageDiv = document.getElementById('turnMessage');
+        const restartBtn = document.getElementById('restartBtn');
 
         let sequence = [];
         let userSequence = [];
@@ -85,30 +95,27 @@
             canClick = false;
             levelDiv.textContent = `Aşama: ${level}`;
             messageDiv.style.display = 'none';
+            restartBtn.style.display = 'none'; 
             turnMessageDiv.textContent = "Işıklar gösteriliyor...";
-            turnMessageDiv.style.display = 'block'; // "Işıklar gösteriliyor" mesajını göster
+            turnMessageDiv.style.display = 'block';
 
-            // Yeni bir ışık seç
             const newLight = Math.floor(Math.random() * buttons.length);
             sequence.push(newLight);
             flashSequence();
         }
 
-
-
         function flashSequence() {
             let delay = 0;
-            sequence.forEach((index, i) => {
+            sequence.forEach((index) => {
                 setTimeout(() => {
                     buttons[index].classList.add('active');
                     setTimeout(() => {
                         buttons[index].classList.remove('active');
                     }, 500);
                 }, delay);
-                delay += 1000; // Her bir buton arasında 1 saniye bekle
+                delay += 1000;
             });
 
-            // Işıklar yandıktan sonra kullanıcı seçimi için bekle
             setTimeout(() => {
                 canClick = true;
                 turnMessageDiv.textContent = "Senin sıran!";
@@ -121,43 +128,67 @@
                     const userIndex = parseInt(e.target.dataset.index);
                     userSequence.push(userIndex);
 
-                    // Kullanıcının doğru butona tıkladığını kontrol et
                     if (userIndex === sequence[userSequence.length - 1]) {
-                        e.target.classList.add('correct'); // Doğru buton yeşil olacak
+                        e.target.classList.add('correct');
                         setTimeout(() => {
-                            e.target.classList.remove('correct'); // Bir süre sonra yeşil rengi kaldır
+                            e.target.classList.remove('correct');
                         }, 500);
                     } else {
-                        endGame("Kaybettin!");
+                        endGame("Kaybettin!", "red");
                         return;
                     }
 
-                    // Tüm sıralamayı tamamladıysa bir sonraki aşamaya geç
                     if (userSequence.length === sequence.length) {
                         if (level === maxLevel) {
-                            endGame("Kazandın!");
+                            endGame("Kazandın!", "lightgreen");
                         } else {
                             level++;
-                            startLevel();
+                            document.body.style.backgroundColor = "lightgreen";
+                            setTimeout(() => {
+                                document.body.style.backgroundColor = "#f0f0f0";
+                            }, 1000);
+
+                            setTimeout(() => {
+                                startLevel();
+                            }, 1000);
                         }
                     }
                 }
             });
         });
 
-        function endGame(message) {
+        function endGame(message, color) {
             canClick = false;
             messageDiv.textContent = message;
             messageDiv.style.display = 'block';
-            turnMessageDiv.style.display = 'none'; // "Senin sıran" mesajını gizle
+            turnMessageDiv.style.display = 'none';
 
-            // Tüm butonları gizle
+            if (color) {
+                document.body.style.backgroundColor = color;
+            }
+
             buttons.forEach(button => {
                 button.style.display = 'none';
             });
+
+            restartBtn.style.display = 'inline-block'; // Tekrar başla butonu aç
         }
 
-        // Oyunu başlat
+        restartBtn.addEventListener('click', () => {
+            // Oyunu sıfırla
+            sequence = [];
+            userSequence = [];
+            level = 1;
+
+            buttons.forEach(button => {
+                button.style.display = 'inline-block';
+            });
+
+            document.body.style.backgroundColor = "#f0f0f0";
+            startLevel();
+        });
+
+        // Başlangıç
         startLevel();
     </script>
 </body>
