@@ -1,0 +1,55 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0; 
+}
+
+.button-container {
+    display: flex;
+    flex-direction: column; 
+    align-items: center; 
+    gap: 20px; 
+}
+
+.butonlar {
+    font-weight: bold;
+    border-radius: 6px;
+    height: 50px;
+    width: 200px;
+    cursor: pointer;
+    background-color: #4CAF50; 
+    color: white; 
+    border: none; 
+    transition: background-color 0.3s; 
+}
+
+.butonlar:hover {
+    background-color: #45a049;
+}
+
+.butonimkansiz
+{
+    background-color: #ff0000;
+}
+
+.butonzor
+{
+    background-color: #ff6600;
+}
+
+.butonorta
+{
+    background-color: #ffee00;
+}
+
+.butonkolay
+{
+    background-color: #00b7ff;
+}
+
+.alt-buton {
+    margin-top: 30px;
+}

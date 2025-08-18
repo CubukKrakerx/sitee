@@ -1,0 +1,75 @@
+.bosluk
+{
+    margin-top:800px ;
+}
+
+.uzaklastirma
+{
+    margin: 20px;
+    margin-top: 50px;
+    height: 50px;
+    width: 300px;
+}
+
+.buton
+{
+    font-weight: bold;
+    border-radius: 6px;
+}
+
+.yazi
+{
+    font-size: 20px;
+}
+
+body {
+    background-color: antiquewhite;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.button {
+    width: 225px;
+    height: 50px;
+    margin: 20px;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    background-color: lightblue;
+    transition:background-color 0.3s ease;
+    cursor: pointer;
+}
+
+.button:hover
+{
+    background-color: red;
+}
+
+.music-controls {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: white;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+}
+
+.music-button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.volume-slider {
+    margin-left: 10px;
+}
