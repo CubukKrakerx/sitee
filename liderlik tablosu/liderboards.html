@@ -1,45 +1,19 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Liderlik Tablosu</title>
-<style>
-table {
-    width: 300px;
-    margin: 50px auto;
-    border-collapse: collapse;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
-}
-th, td {
-    padding: 10px;
-    border: 1px solid #ccc;
-}
-th { background-color: orange; color: white; }
-tr:nth-child(even) { background-color: #f9f9f9; }
-</style>
-</head>
-<body>
-<table>
-    <thead>
-        <tr><th>İsim</th><th>Skor</th></tr>
-    </thead>
-    <tbody id="leaderboard"></tbody>
-</table>
-
 <script>
-fetch('scores.json')
-.then(res => res.json())
-.then(data => {
-    const tbody = document.getElementById('leaderboard');
-    data.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${item.name}</td><td>${item.score}</td>`;
-        tbody.appendChild(tr);
+function loadLeaderboard() {
+    fetch('scores.json')
+    .then(res => res.json())
+    .then(data => {
+        const tbody = document.getElementById('leaderboard');
+        tbody.innerHTML = ''; // Önce temizle
+        data.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${item.name}</td><td>${item.score}</td>`;
+            tbody.appendChild(tr);
+        });
     });
-});
+}
+<button onclick="loadLeaderboard()">Tabloyu Güncelle</button>
+
+// Sayfa açılınca yükle
+loadLeaderboard();
 </script>
-</body>
-</html>
