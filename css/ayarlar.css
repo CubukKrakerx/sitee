@@ -143,4 +143,9 @@ body {
         font-size: 14px;
         height: 40px;
     }
+
+    .yamalar
+    {
+        position: fixed;
+    }
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,168 +28,181 @@
             transition: background-color 0.3s;
         }
 
-        .active {
+        .active { background-color: orange; }
+        .correct { background-color: green; }
+
+        #message { font-size: 24px; margin-top: 20px; display: none; }
+        #restartBtn { margin-top: 20px; padding: 10px 20px; font-size: 18px; display: none; cursor: pointer; }
+        #level { font-size: 18px; }
+        #turnMessage { font-size: 18px; margin-top: 10px; display: none; }
+
+        /* Skor kaydetme alanı */
+        #saveScore {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        #saveScore input {
+            padding: 8px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 200px;
+            margin-right: 10px;
+        }
+
+        #saveScore button {
+            padding: 8px 15px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: none;
             background-color: orange;
-        }
-
-        .correct {
-            background-color: green;
-        }
-
-        #message {
-            font-size: 24px;
-            margin-top: 20px;
-            display: none;
-        }
-
-        #restartBtn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 18px;
-            display: none; /* Başlangıçta gizli */
+            color: white;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
 
-        #level {
-            font-size: 18px;
-        }
-
-        #turnMessage {
-            font-size: 18px;
-            margin-top: 10px;
-            display: none;
-        }
+        #saveScore button:hover { background-color: darkorange; }
     </style>
 </head>
 <body>
-    <div id="level">Aşama: 1</div>
-    <div id="turnMessage">Işıklar gösteriliyor...</div>
-    <div id="buttons">
-        <button class="button" data-index="0"></button>
-        <button class="button" data-index="1"></button>
-        <button class="button" data-index="2"></button>
-        <button class="button" data-index="3"></button>
-        <button class="button" data-index="4"></button>
-        <button class="button" data-index="5"></button>
-        <button class="button" data-index="6"></button>
-        <button class="button" data-index="7"></button>
-    </div>
-    <div id="message"></div>
-    <button id="restartBtn">Tekrar Başla</button>
 
-    <script>
-        const buttons = document.querySelectorAll('.button');
-        const messageDiv = document.getElementById('message');
-        const levelDiv = document.getElementById('level');
-        const turnMessageDiv = document.getElementById('turnMessage');
-        const restartBtn = document.getElementById('restartBtn');
+<div id="level">Aşama: 1</div>
+<div id="turnMessage">Işıklar gösteriliyor...</div>
 
-        let sequence = [];
-        let userSequence = [];
-        let level = 1;
-        let maxLevel = 16;
-        let canClick = false;
+<div id="buttons">
+    <button class="button" data-index="0"></button>
+    <button class="button" data-index="1"></button>
+    <button class="button" data-index="2"></button>
+    <button class="button" data-index="3"></button>
+    <button class="button" data-index="4"></button>
+    <button class="button" data-index="5"></button>
+    <button class="button" data-index="6"></button>
+    <button class="button" data-index="7"></button>
+</div>
 
-        function startLevel() {
-            userSequence = [];
-            canClick = false;
-            levelDiv.textContent = `Aşama: ${level}`;
-            messageDiv.style.display = 'none';
-            restartBtn.style.display = 'none'; 
-            turnMessageDiv.textContent = "Işıklar gösteriliyor...";
-            turnMessageDiv.style.display = 'block';
+<div id="message"></div>
+<button id="restartBtn">Tekrar Başla</button>
 
-            const newLight = Math.floor(Math.random() * buttons.length);
-            sequence.push(newLight);
-            flashSequence();
+<!-- Skor kaydetme alanı -->
+<div id="saveScore">
+    <input type="text" id="playerName" placeholder="Adınızı girin" />
+    <button id="saveBtn">Skoru Kaydet</button>
+</div>
+
+<script>
+const buttons = document.querySelectorAll('.button');
+const messageDiv = document.getElementById('message');
+const levelDiv = document.getElementById('level');
+const turnMessageDiv = document.getElementById('turnMessage');
+const restartBtn = document.getElementById('restartBtn');
+
+let sequence = [];
+let userSequence = [];
+let level = 1;
+let maxLevel = 16;
+let canClick = false;
+
+function startLevel() {
+    userSequence = [];
+    canClick = false;
+    levelDiv.textContent = `Aşama: ${level}`;
+    messageDiv.style.display = 'none';
+    restartBtn.style.display = 'none'; 
+    turnMessageDiv.textContent = "Işıklar gösteriliyor...";
+    turnMessageDiv.style.display = 'block';
+
+    const newLight = Math.floor(Math.random() * buttons.length);
+    sequence.push(newLight);
+    flashSequence();
+}
+
+function flashSequence() {
+    let delay = 0;
+    sequence.forEach((index) => {
+        setTimeout(() => {
+            buttons[index].classList.add('active');
+            setTimeout(() => { buttons[index].classList.remove('active'); }, 500);
+        }, delay);
+        delay += 1000;
+    });
+
+    setTimeout(() => {
+        canClick = true;
+        turnMessageDiv.textContent = "Senin sıran!";
+    }, delay);
+}
+
+buttons.forEach(button => {
+    button.addEventListener('click', (e) => {
+        if (!canClick) return;
+        const userIndex = parseInt(e.target.dataset.index);
+        userSequence.push(userIndex);
+
+        if (userIndex === sequence[userSequence.length - 1]) {
+            e.target.classList.add('correct');
+            setTimeout(() => { e.target.classList.remove('correct'); }, 500);
+        } else {
+            endGame("Kaybettin!", "red");
+            return;
         }
 
-        function flashSequence() {
-            let delay = 0;
-            sequence.forEach((index) => {
-                setTimeout(() => {
-                    buttons[index].classList.add('active');
-                    setTimeout(() => {
-                        buttons[index].classList.remove('active');
-                    }, 500);
-                }, delay);
-                delay += 1000;
-            });
-
-            setTimeout(() => {
-                canClick = true;
-                turnMessageDiv.textContent = "Senin sıran!";
-            }, delay);
-        }
-
-        buttons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                if (canClick) {
-                    const userIndex = parseInt(e.target.dataset.index);
-                    userSequence.push(userIndex);
-
-                    if (userIndex === sequence[userSequence.length - 1]) {
-                        e.target.classList.add('correct');
-                        setTimeout(() => {
-                            e.target.classList.remove('correct');
-                        }, 500);
-                    } else {
-                        endGame("Kaybettin!", "red");
-                        return;
-                    }
-
-                    if (userSequence.length === sequence.length) {
-                        if (level === maxLevel) {
-                            endGame("Kazandın!", "lightgreen");
-                        } else {
-                            level++;
-                            document.body.style.backgroundColor = "lightgreen";
-                            setTimeout(() => {
-                                document.body.style.backgroundColor = "#f0f0f0";
-                            }, 1000);
-
-                            setTimeout(() => {
-                                startLevel();
-                            }, 1000);
-                        }
-                    }
-                }
-            });
-        });
-
-        function endGame(message, color) {
-            canClick = false;
-            messageDiv.textContent = message;
-            messageDiv.style.display = 'block';
-            turnMessageDiv.style.display = 'none';
-
-            if (color) {
-                document.body.style.backgroundColor = color;
+        if (userSequence.length === sequence.length) {
+            if (level === maxLevel) {
+                endGame("Kazandın!", "lightgreen");
+            } else {
+                level++;
+                document.body.style.backgroundColor = "lightgreen";
+                setTimeout(() => { document.body.style.backgroundColor = "#f0f0f0"; }, 1000);
+                setTimeout(() => { startLevel(); }, 1000);
             }
-
-            buttons.forEach(button => {
-                button.style.display = 'none';
-            });
-
-            restartBtn.style.display = 'inline-block'; // Tekrar başla butonu aç
         }
+    });
+});
 
-        restartBtn.addEventListener('click', () => {
-            // Oyunu sıfırla
-            sequence = [];
-            userSequence = [];
-            level = 1;
+function endGame(message, color) {
+    canClick = false;
+    messageDiv.textContent = message;
+    messageDiv.style.display = 'block';
+    turnMessageDiv.style.display = 'none';
+    buttons.forEach(button => { button.style.display = 'none'; });
+    restartBtn.style.display = 'inline-block';
+    if (color) document.body.style.backgroundColor = color;
 
-            buttons.forEach(button => {
-                button.style.display = 'inline-block';
-            });
+    // Skor kaydetme alanını göster
+    document.getElementById('saveScore').style.display = 'block';
+}
 
-            document.body.style.backgroundColor = "#f0f0f0";
-            startLevel();
-        });
+restartBtn.addEventListener('click', () => {
+    sequence = [];
+    userSequence = [];
+    level = 1;
+    buttons.forEach(button => { button.style.display = 'inline-block'; });
+    document.body.style.backgroundColor = "#f0f0f0";
 
-        // Başlangıç
-        startLevel();
-    </script>
+    // Skor kaydetme alanını tekrar gizle
+    document.getElementById('saveScore').style.display = 'none';
+
+    startLevel();
+});
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+    const name = document.getElementById('playerName').value || "Anonim";
+    const score = level;
+    fetch('save_score.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({name, score})
+    })
+    .then(() => {
+        alert("Skor kaydedildi!");
+        document.getElementById('saveScore').style.display = 'none';
+    });
+});
+
+// Başlangıç
+startLevel();
+</script>
 </body>
 </html>

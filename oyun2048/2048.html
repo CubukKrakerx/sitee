@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>2048 Oyunu</title>
   <link rel="icon" href="dosyalar/resimler/asillogo.png" type="image/x-icon">
   <style>
@@ -11,30 +11,44 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      margin: 0;
       background-color: #faf8ef;
       font-family: Arial, sans-serif;
-      margin: 0;
       overflow: hidden;
+      touch-action: none; /* Mobilde sayfanın kaymasını engeller */
     }
 
-    .grid {
+    .board {
+      position: relative;
+      width: 420px;
+      height: 420px;
+      background: #bbada0;
+      border-radius: 10px;
       display: grid;
       grid-template-columns: repeat(4, 100px);
+      grid-template-rows: repeat(4, 100px);
       gap: 5px;
-      position: relative;
+      padding: 5px;
     }
 
     .cell {
       width: 100px;
       height: 100px;
+      background: #cdc1b4;
+      border-radius: 5px;
+    }
+
+    .tile {
+      position: absolute;
+      width: 100px;
+      height: 100px;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 24px;
+      font-size: 28px;
       font-weight: bold;
-      color: #776e65;
       border-radius: 5px;
-      transition: all 0.2s ease; /* Kayma ve renk animasyonu */
+      transition: transform 0.2s ease, background-color 0.2s ease;
     }
 
     .message {
@@ -50,36 +64,27 @@
       padding: 15px 25px;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10;
     }
   </style>
 </head>
 <body>
-  <div class="grid" id="grid">
+  <div class="board" id="board">
     <div class="message" id="message">Kaybettin!</div>
+    <!-- Grid arka plan hücreleri -->
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+    <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
   </div>
 
   <script>
-    const gridElement = document.getElementById("grid");
+    const boardElement = document.getElementById("board");
     const messageElement = document.getElementById("message");
     let board = Array.from({length: 4}, () => Array(4).fill(0));
 
-    function drawBoard() {
-      gridElement.innerHTML = "";
-      gridElement.appendChild(messageElement);
-      board.forEach(row => {
-        row.forEach(value => {
-          const cell = document.createElement("div");
-          cell.className = "cell";
-          cell.innerText = value === 0 ? "" : value;
-          cell.style.backgroundColor = getColor(value);
-          gridElement.appendChild(cell);
-        });
-      });
-    }
-
     function getColor(value) {
       switch (value) {
-        case 0: return "#cdc1b4";
         case 2: return "#eee4da";
         case 4: return "#ede0c8";
         case 8: return "#f2b179";
@@ -95,11 +100,28 @@
       }
     }
 
+    function drawBoard() {
+      document.querySelectorAll(".tile").forEach(t => t.remove());
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          let value = board[r][c];
+          if (value !== 0) {
+            const tile = document.createElement("div");
+            tile.className = "tile";
+            tile.innerText = value;
+            tile.style.backgroundColor = getColor(value);
+            tile.style.transform = `translate(${c*105}px, ${r*105}px)`;
+            boardElement.appendChild(tile);
+          }
+        }
+      }
+    }
+
     function spawnTile() {
       const emptyCells = [];
       board.forEach((row, r) => {
-        row.forEach((value, c) => {
-          if (value === 0) emptyCells.push([r, c]);
+        row.forEach((v, c) => {
+          if (v === 0) emptyCells.push([r, c]);
         });
       });
       if (emptyCells.length > 0) {
@@ -112,74 +134,64 @@
       for (let r = 0; r < 4; r++) {
         for (let c = 0; c < 4; c++) {
           if (board[r][c] === 0) return false;
-          if (r < 3 && board[r][c] === board[r + 1][c]) return false;
-          if (c < 3 && board[r][c] === board[r][c + 1]) return false;
+          if (r < 3 && board[r][c] === board[r+1][c]) return false;
+          if (c < 3 && board[r][c] === board[r][c+1]) return false;
         }
       }
       return true;
     }
 
-    function moveTiles(direction) {
-      let moved = false;
-
-      const combine = (arr) => {
-        const newRow = arr.filter(num => num);
-        for (let i = 0; i < newRow.length - 1; i++) {
-          if (newRow[i] === newRow[i + 1]) {
-            newRow[i] *= 2;
-            newRow[i + 1] = 0;
-            moved = true;
-          }
+    function slide(row) {
+      row = row.filter(v => v);
+      for (let i = 0; i < row.length - 1; i++) {
+        if (row[i] === row[i+1]) {
+          row[i] *= 2;
+          row[i+1] = 0;
         }
-        return newRow.filter(num => num);
-      };
+      }
+      row = row.filter(v => v);
+      while (row.length < 4) row.push(0);
+      return row;
+    }
 
-      const slide = (row) => {
-        const newRow = combine(row);
-        while (newRow.length < 4) newRow.push(0);
-        return newRow;
-      };
-
-      if (direction === "left") {
-        board.forEach((row, r) => {
-          const newRow = slide(row);
-          if (JSON.stringify(row) !== JSON.stringify(newRow)) moved = true;
+    function moveTiles(dir) {
+      let moved = false;
+      if (dir === "left") {
+        for (let r = 0; r < 4; r++) {
+          let newRow = slide(board[r]);
+          if (board[r].toString() !== newRow.toString()) moved = true;
           board[r] = newRow;
-        });
-      } else if (direction === "right") {
-        board.forEach((row, r) => {
-          const newRow = slide(row.reverse()).reverse();
-          if (JSON.stringify(row) !== JSON.stringify(newRow)) moved = true;
+        }
+      } else if (dir === "right") {
+        for (let r = 0; r < 4; r++) {
+          let newRow = slide(board[r].slice().reverse()).reverse();
+          if (board[r].toString() !== newRow.toString()) moved = true;
           board[r] = newRow;
-        });
-      } else if (direction === "up") {
+        }
+      } else if (dir === "up") {
         for (let c = 0; c < 4; c++) {
-          const col = [];
-          for (let r = 0; r < 4; r++) col.push(board[r][c]);
-          const newCol = slide(col);
+          let col = [board[0][c], board[1][c], board[2][c], board[3][c]];
+          let newCol = slide(col);
           for (let r = 0; r < 4; r++) {
             if (board[r][c] !== newCol[r]) moved = true;
             board[r][c] = newCol[r];
           }
         }
-      } else if (direction === "down") {
+      } else if (dir === "down") {
         for (let c = 0; c < 4; c++) {
-          const col = [];
-          for (let r = 3; r >= 0; r--) col.push(board[r][c]);
-          const newCol = slide(col.reverse()).reverse();
+          let col = [board[3][c], board[2][c], board[1][c], board[0][c]];
+          let newCol = slide(col).reverse();
           for (let r = 0; r < 4; r++) {
             if (board[r][c] !== newCol[r]) moved = true;
             board[r][c] = newCol[r];
           }
         }
       }
-
       return moved;
     }
 
-    function handleMove(direction) {
-      let moved = moveTiles(direction);
-      if (moved) {
+    function handleMove(dir) {
+      if (moveTiles(dir)) {
         spawnTile();
         drawBoard();
         if (isGameOver()) {
@@ -188,29 +200,23 @@
       }
     }
 
-    // Klavye desteği
-    window.addEventListener("keydown", (event) => {
-      if (event.key === "ArrowLeft") handleMove("left");
-      if (event.key === "ArrowRight") handleMove("right");
-      if (event.key === "ArrowUp") handleMove("up");
-      if (event.key === "ArrowDown") handleMove("down");
+    // Klavye
+    window.addEventListener("keydown", e => {
+      if (e.key === "ArrowLeft") handleMove("left");
+      if (e.key === "ArrowRight") handleMove("right");
+      if (e.key === "ArrowUp") handleMove("up");
+      if (e.key === "ArrowDown") handleMove("down");
     });
 
-    // Dokunmatik destek
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    window.addEventListener("touchstart", (e) => {
-      const touch = e.touches[0];
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
+    // Dokunmatik
+    let startX, startY;
+    window.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
     });
-
-    window.addEventListener("touchend", (e) => {
-      const touch = e.changedTouches[0];
-      let dx = touch.clientX - touchStartX;
-      let dy = touch.clientY - touchStartY;
-
+    window.addEventListener("touchend", e => {
+      let dx = e.changedTouches[0].clientX - startX;
+      let dy = e.changedTouches[0].clientY - startY;
       if (Math.abs(dx) > Math.abs(dy)) {
         if (dx > 50) handleMove("right");
         else if (dx < -50) handleMove("left");
