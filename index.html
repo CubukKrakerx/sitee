@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ana Menü</title>
+    <title>Pleahunt</title>
     <link rel="stylesheet" href="css/ayarlar.css">
     <link rel="icon" href="dosyalar/resimler/asillogo.png" type="image/x-icon">
-
+    <meta name="description" content="Pleahunt sitesinde en iyi oyunlarını bulabilir, hemen oynayabilirsiniz.">
+    
 </head>
 <body>
 
@@ -26,61 +27,73 @@
     </style>
 
     <a href="/oyun2048/2048.html">
-        <input type="button" value="2048" class="button">
+        <input type="button" value="💥2048💥" class="button">
     </a>
 
-    <a href="/renkBulmaca/sonEkran.html">
-        <input type="button" value="Renk Bulamaca Oyunu" class="button">
+    <a href="/renkBulmaca/baslamaEkrani.html">
+        <input type="button" value="🎨Renk Bulamaca Oyunu🎨" class="button">
     </a>
 
     <a href="/hafizaOyunlari/kartOyunu/kartOyunuLobi.html">
-        <input type="button" value="Kart Oyunu" class="button">
+        <input type="button" value="💫Kart Oyunu💫" class="button">
     </a>
 
     <a href="/hafizaOyunlari/renkHatirlama/renkHatirlama.html">
-        <input type="button" value="Tuttur bakalım" class="button">
+        <input type="button" value="🤔Tuttur bakalım🤔" class="button">
     </a>
 
     <a href="/zitlikOyunu/ZitOyunu.html">
-        <input type="button" value="Zıtlık dedektifi" class="button">
+        <input type="button" value="🕵️‍♂️Zıtlık dedektifi🕵️‍♀️" class="button">
     </a>
 
     <a href="balonPatlatmaca/balon.html">
-        <input type="button" value="Balon patlatmaca" class="button">
+        <input type="button" value="🎈Balon patlatmaca🎈" class="button">
     </a>
 
-        <a href="">
-        <input type="button" value="Yakında..." class="button">
+        <a href="desenBulmaOyunu/desenBulmaOyunu.html">
+        <input type="button" value="🎆Desen bulma oyunu🎆" class="button">
     </a>
 
-        <a href="">
-        <input type="button" value="Yakında..." class="button">
+        <a href="satrancTek/satrancCift.html">
+        <input type="button" value="♟Satranç♟" class="button">
     </a>
 
-        <a href="">
-        <input type="button" value="Yakında..." class="button">
+    <a href="sudoku/sudoku.html">
+        <input type="button" value="💫Sudoku💫" class="button">
     </a>
     
-        <a href="">
-        <input type="button" value="Yakında..." class="button">
-    </a>
-
-    
-
-    <div class="music-controls">
-        <button id="playPauseButton" class="music-button">▶</button>
-        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.1" value="0.5">
-    </div>
-
-<!--
     <a href="">
-        <input name="" id="button" class="yamalar">
-    </a> 
--->
-    <audio id="backgroundMusic" loop>
-        <source src="/dosyalar/sesler/acousticbreeze.mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
+        <input type="button" value="Yakında..." class="button">
+    </a>
+
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+
+    <center>
+        <a href="yamalar/yamalar.html">
+            <input type="button" value="Yama notları" class="button2">
+        </a>
+    </center>
+
+<div class="music-controls">
+    <button id="playPauseButton" class="music-button">▶</button>
+    <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.1" value="0.5">
+
+    <!-- Yeni yuvarlak butonlar -->
+    <a href="kayit/profil.html">
+        <button class="round-button"><img src="dosyalar/resimler/Profilpp.png" width="54px" height="40px"></button>
+    </a>
+    <button class="round-button">B</button>
+</div>
+
+<audio id="backgroundMusic" loop>
+    <source src="/dosyalar/sesler/acousticbreeze.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+
 
     <script>
         const playPauseButton = document.getElementById('playPauseButton');
@@ -90,10 +103,10 @@
         playPauseButton.addEventListener('click', () => {
             if (backgroundMusic.paused) {
                 backgroundMusic.play();
-                playPauseButton.textContent = '❚❚'; // Playing symbol
+                playPauseButton.textContent = '❚❚'; 
             } else {
                 backgroundMusic.pause();
-                playPauseButton.textContent = '▶'; // Paused symbol
+                playPauseButton.textContent = '▶'; 
             }
         });
 

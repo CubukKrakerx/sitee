@@ -1,0 +1,52 @@
+/* Tablo ana stil */
+.tablo1 {
+    width: 80%;
+    margin: 40px auto;
+    border-collapse: collapse;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3); /* Hafif gölge */
+    font-family: Arial, sans-serif;
+    border-radius: 10px; /* Köşeleri yuvarlak */
+    overflow: hidden;
+    background-color: #2E2E2E; /* Tablo arka planı koyu gri */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Hover ile animasyon efekti */
+.tablo1:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+}
+
+/* Hücreler */
+.tablo1 td, .tablo1 th {
+    padding: 15px 20px;
+    text-align: center;
+    color: #FFFFFF; /* Yazılar beyaz */
+}
+
+/* Başlık hücreleri */
+.tablo1 th {
+    background-color: #4F4F4F; /* Başlık koyu gri */
+    font-size: 1.1em;
+}
+
+/* Alternatif satır renklendirme */
+.tablo1 tr:nth-child(even) td {
+    background-color: #3A3A3A; /* Daha açık gri satırlar */
+}
+
+/* Satır hover efekti */
+.tablo1 tr:hover td {
+    background-color: #5A5A5A;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+/* Tablo başlığı */
+.tablo1 caption {
+    caption-side: top;
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #FFFFFF;
+    margin-bottom: 15px;
+}

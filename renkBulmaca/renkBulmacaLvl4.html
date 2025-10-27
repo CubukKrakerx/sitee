@@ -6,26 +6,49 @@
     <title>Renk bulmaca level 4</title>
 </head>
 <body>
-           
+         
     <style>
-        .renk1
-       {
-           display: inline-block;
-           width:250px;
-           height:250px;
-           background-color:#ffff00 ;
-       }
-       
-       .renk2
-       {
-           display: inline-block;
-           width:250px;
-           height:250px;
-           background-color:#fff942;
-       }
-      </style>
+.button-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center; /* yatay ortala */
+  gap: 15px; /* butonlar arası boşluk */
+  margin-top: 20px;
+}
 
+/* Temel renkli buton stili */
+.renk1, .renk2 {
+  display: inline-block;
+  width: 40vw;      /* responsive genişlik: ekranın %40'ı */
+  max-width: 200px; /* maksimum boyut bilgisayar için */
+  height: 40vw;     /* kare şeklinde, responsive */
+  max-height: 200px;/* maksimum yükseklik */
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-bottom: 1%;
+}
 
+/* Renkler */
+.renk1 {
+  background-color: #ffff00;
+}
+
+.renk2 {
+  background-color: #fff942;
+}
+
+/* Küçük ekranlar için ayarlama */
+@media (max-width: 480px) {
+  .renk1, .renk2 {
+    width: 80vw;
+    height: 80vw;
+  }
+}
+</style>
+
+    
 <a href="/renkBulmaca/kaybetmeEkrani.html">
     <input type="button" value="" class="renk1">
 </a>

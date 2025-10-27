@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil Düzenle - Pleahunt</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding-top: 50px;
+    }
+
+    .profile-edit-container {
+      background-color: #2c2c2c;
+      padding: 25px;
+      border-radius: 12px;
+      width: 350px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .profile-edit-container h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #avatarSelect div {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .avatar-option {
+      cursor: pointer;
+      border-radius: 6px;
+      transition: transform 0.2s, border 0.2s;
+    }
+
+    .avatar-option:hover {
+      transform: scale(1.1);
+    }
+
+    #nameEdit {
+      margin-top: 20px;
+    }
+
+    #nameEdit input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #555;
+      background-color: #222;
+      color: #fff;
+      box-sizing: border-box;
+    }
+
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button-group button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      background-color: #0a84ff;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .button-group button:hover {
+      background-color: #006fd6;
+    }
+  </style>
+</head>
+<body>
+  <div class="profile-edit-container">
+    <h2>Profil Düzenle</h2>
+
+    <!-- Profil Fotoğrafı Seçimi -->
+    <div id="avatarSelect">
+      <p style="font-size:14px;color:#bbb;">Profil fotoğrafını seç:</p>
+      <div>
+        <img src="/dosyalar/resimler/profiller/oyuncuPp1.png" class="avatar-option" width="50" height="50">
+        <img src="/dosyalar/resimler/profiller/oyuncuPp2.png" class="avatar-option" width="50" height="50">
+        <img src="/dosyalar/resimler/profiller/oyuncuPp3.png" class="avatar-option" width="50" height="50">
+        <img src="/dosyalar/resimler/profiller/oyuncuPp4.png" class="avatar-option" width="50" height="50">
+      </div>
+    </div>
+
+    <!-- İsim Değiştir -->
+    <div id="nameEdit">
+      <p style="font-size:14px;color:#bbb;">Kullanıcı adını değiştir:</p>
+      <input type="text" id="newNameInput" placeholder="Yeni adını yaz">
+    </div>
+
+    <!-- Butonlar -->
+    <div class="button-group">
+      <button id="saveBtn">Kaydet</button>
+      <a href="profil.html">
+        <button id="backBtn">Geri Dön</button>
+      </a>
+    </div>
+  </div>
+
+  <script type="module" src="profilDuzenle.js"></script>
+</body>
+</html>

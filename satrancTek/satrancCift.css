@@ -1,0 +1,63 @@
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #4f4f4f;
+  margin: 0;
+  font-family: sans-serif;
+}
+
+#info {
+  margin: 10px;
+  font-size: 1.2rem;
+  color: white;
+}
+
+#chessboard {
+  display: grid;
+  grid-template-columns: repeat(8, 10vmin);
+  grid-template-rows: repeat(8, 10vmin);
+  border: 2px solid #333;
+  margin-top: 10px;
+}
+
+.square {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  font-size: 6vmin;
+  font-weight: bold; /* taşlar daha net görünür */
+  position: relative;
+}
+
+/* Taşın arka plan kutucuğu */
+.square span.piece-background {
+  position: absolute;
+  width: 90%;
+  height: 90%;
+  border-radius: 5px; /* köşe hafif yuvarlatılmış */
+  z-index: 0;
+}
+
+/* Taşın kendisi üstte */
+.square span.piece {
+  position: relative;
+  z-index: 1;
+}
+
+/* Klasik gri tema kareleri */
+.white { background-color: #d3d3d3; } /* açık gri */
+.black { background-color: #7a7a7a; color: white; } /* koyu gri */
+
+/* Seçilen kare */
+.selected { outline: 3px solid yellow; }
+
+/* Mesaj alanı */
+#message {
+  margin-top: 10px;
+  font-size: 1.1rem;
+  color: #ff6666;
+  height: 1.5em;
+}

@@ -149,3 +149,66 @@ body {
         position: fixed;
     }
 }
+
+.button2 {
+    width: 225px;
+    height: 50px;
+    margin: 20px;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    background-color: blue;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+}
+
+.button2 {
+    width: 15%;          /* tam genişlik buton */
+    height: 45px;
+    margin: 10px auto;
+    display: block;      /* alt alta gelsin */
+    font-size: 16px;
+}
+
+.button2:hover {
+    background-color: blueviolet;
+}
+
+.music-controls {
+    display: flex;
+    align-items: center; /* Tüm elemanları dikey ortalar */
+    gap: 10px; /* Elemanlar arası boşluk */
+}
+
+.music-button {
+    padding: 10px 15px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* İçindeki simgeyi ortalar */
+}
+
+
+.volume-slider {
+    width: 150px;
+}
+
+/* Yeni yuvarlak butonlar için stil */
+.round-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background-color: #555;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.round-button:hover {
+    background-color: #777;
+}
