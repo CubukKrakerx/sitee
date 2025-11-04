@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bizim Günümüz 💖</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #ffb6c1, #ffe4e1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      height: 100vh;
+      color: #4a2c2a;
+      text-align: center;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    input {
+      padding: 12px 16px;
+      border: 2px solid #fff;
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+      text-align: center;
+      color: #4a2c2a;
+      background: #fffafc;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+    button {
+      margin-top: 16px;
+      padding: 10px 22px;
+      background-color: #ff7f9c;
+      border: none;
+      color: white;
+      border-radius: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #ff527a;
+    }
+    .error {
+      color: #b30021;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .heart {
+      font-size: 40px;
+      margin-top: 20px;
+      animation: pulse 1.3s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <h1>💞 Bizim için en değerli tarih 💞</h1>
+  <input type="text" id="dateInput" placeholder="Tarihi yaz...">
+  <button id="checkBtn">Devam Et</button>
+  <div id="message" class="error"></div>
+  <div id="heart" class="heart" style="display:none;">❤️</div>
+
+  <script>
+    const correctDate = '9 şubat 2025';
+    const input = document.getElementById('dateInput');
+    const message = document.getElementById('message');
+    const heart = document.getElementById('heart');
+    const button = document.getElementById('checkBtn');
+
+    button.addEventListener('click', () => {
+      const value = input.value.trim().toLowerCase();
+      if (value === correctDate) {
+        message.textContent = '';
+        heart.style.display = 'block';
+        setTimeout(() => {
+          window.location.href = 'selam2.html';
+        }, 1200);
+      } else {
+        message.textContent = 'Yanlış tarih... Tekrar dene 💔';
+        heart.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Selam2 💖</title>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(135deg, #ffb6c1, #ffd6e8, #f9e3f4);
+      font-family: 'Dancing Script', cursive;
+      color: #fff;
+      text-align: center;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      position: relative;
+    }
+
+    h1 {
+      font-size: 30px;
+      text-shadow: 0 0 12px rgba(255, 100, 150, 1), 0 0 25px rgba(255,255,255,0.9);
+      opacity: 0;
+      transition: opacity 1.5s ease;
+      z-index: 2;
+    }
+
+    .fade-in { opacity: 1; }
+    .fade-out { opacity: 0; }
+
+    /* Kalp animasyonları */
+    .heart {
+      position: absolute;
+      bottom: -10px;
+      color: rgba(255,255,255,0.8);
+      animation: floatUp 6s linear infinite;
+      font-size: 20px;
+      z-index: 1;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-110vh) scale(1.5); opacity: 0; }
+    }
+
+    /* Zarftan çıkan mektup */
+    .envelope {
+      position: absolute;
+      bottom: -200px;
+      width: 240px;
+      height: 160px;
+      background: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      overflow: hidden;
+      opacity: 0;
+      transition: bottom 2s ease-out, opacity 1s ease-in;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 3;
+    }
+
+    .letter {
+      position: absolute;
+      bottom: -100%;
+      width: 100%;
+      height: 100%;
+      background: #fffafc;
+      color: #333;
+      padding: 15px;
+      box-sizing: border-box;
+      border-radius: 5px;
+      overflow-y: auto;
+      font-size: 1rem;
+      opacity: 0;
+      transition: all 2s ease-out;
+      font-family: 'Dancing Script', cursive;
+    }
+
+    .show-envelope {
+      bottom: 60px;
+      opacity: 1;
+    }
+    .show-letter {
+      bottom: 0;
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 22px; }
+      .envelope { width: 200px; height: 140px; }
+      .letter { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1 id="message"></h1>
+
+  <div class="envelope" id="envelope">
+    <div class="letter" id="letter">
+      <p>
+           Sevgilim 💞<br><br>
+  Seni çok seviyorum 💖 O gün sevgili oluşumuz hâlâ aklımdan çıkmıyor...<br>
+  İyi ki o gün sevgili olmuşuz 💌 O gün benim için dünyadaki en güzel gündü ✨<br><br>
+
+  Seninle her gün sevgimizin arttığı bu ilişkimizde, seni çoook seviyo olmam, 💕<br>
+  Uzak mesafemize rağmen birbirimize bu kadar sahip çıkmamız,<br>
+  birbirimizi bu kadar çok sevmemiz… gerçekten çok güzel 💫<br>
+  Beni her geçen gün etkilemen, kalbimin durmadan çarpmasını sağlıyor 💓<br><br>
+
+  Ama bazen seni üzüyorum ya 😔 işte o zaman gerçekten kötü hissediyorum 💧<br>
+  O tatlı sözlerin yerine soğuk kelimelerin gelmesi çok korkutucu 💔<br>
+  Seni kaybetme korkusu, inan bana, çok korkunç bir şey 🥺<br><br>
+
+  Seninle sonsuza kadar el ele yaşama hayalimin suya düşmesini istemem 🤝💞<br>
+  Çünkü bu hayatta senin gibi tatlı, güzel yürekli, merhametli,<br>
+  her zerresi mükemmel bir kız yok 🌹<br>
+  Sen benim kalbimin en ortasındasın 💘<br>
+  Ve senden başka kimsede kalbimin anahtarı yok 🔐<br><br>
+
+  Sen, kalbimin çarpmasını sağlayan kişisin 💓<br>
+  Sana baktıkça içim kıpır kıpır oluyor 🦋<br>
+  Kelebekler uçuşuyor 🌸<br>
+  Seninle sevgili olduğum için mutluluktan gözlerim doluyor🤍<br><br>
+
+  Seni çok seviyorum 💋 İyi ki varsın 🌷<br>
+  Umarım o tatlı yüzünü tekrar güldürebilirim 😊<br>
+  Çünkü bu dünyada o tatlı gülüşün kadar,<br>
+  o parlayan gözlerin kadar ✨<br>
+  o tatlı dudakların kadar 💋<br>
+  ve kusursuz güzellikteki kalbin kadar 💖 güzel bir şey yok 💫<br><br>
+
+  Seni çok seviyorum 💞<br>
+  İyi ki varsın 💐<br>
+  Umarım yüzün tekrar güler 🌸<br>
+  Seni en iyi seven kişi hep ben olucammmmmmmmmmmmm 💝
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const messages = [
+      'Selam edoşummmm 💞',
+      'Sana bir süpriz yapmak istemiştim 💌',
+      'Umarım hoşuna gider 🌸',
+      'Seni çooook seviyorum 💖',
+      'İyi ki varsın 💕',
+      'Seni bu gün biraz üzdüysem veya kırdıysam 😔',
+      'Çok özür dilerim 💫',
+      'Senin üzgün olduğunu gördüm 💔',
+      'Seni tekrardan mutlu etmek istedim 💞',
+      'Çünkü bu hayatta senin gülüşün kadar güzel bir şey yok 🌷',
+      'Gülerken parlayan gözlerin ✨',
+      'O tebessüm edişin 💖',
+      'Seni çok seviyorum 💋',
+      'Her şey için özür dilerim 🌹',
+      'Umarım gönlünü alabilirim 💘',
+      'Bu dünyada senden güzel bir kız yok 💕',
+      'Çok seviyorum seni 💞',
+      'İyi ki varsın 💫',
+      'İyi ki sana aşkım diyebiliyorum 💝',
+      'İyi ki seninle sohbet edebiliyorum 💗'
+    ];
+
+    const finalWords = [
+      'prensesim 💖','aşkım 💋','güzelim 🌸',
+      'bebeğim 💞','tatlım 💫','edoşum 💕','edam 💝','birtanecik aşkım 💘'
+    ];
+
+    const messageEl = document.getElementById('message');
+    const envelope = document.getElementById('envelope');
+    const letter = document.getElementById('letter');
+    let index = 0;
+
+    function showMessage(list, callback) {
+      if (index < list.length) {
+        messageEl.textContent = list[index];
+        messageEl.classList.add('fade-in');
+        setTimeout(() => {
+          messageEl.classList.remove('fade-in');
+          messageEl.classList.add('fade-out');
+          index++;
+          setTimeout(() => {
+            messageEl.classList.remove('fade-out');
+            showMessage(list, callback);
+          }, 500);
+        }, 2000);
+      } else if (callback) {
+        index = 0;
+        callback();
+      }
+    }
+
+    // Kalplerin rastgele oluşması
+    function createHeart() {
+      const heart = document.createElement('div');
+      heart.classList.add('heart');
+      heart.textContent = '❤️';
+      heart.style.left = Math.random() * 100 + 'vw';
+      heart.style.fontSize = (Math.random() * 20 + 10) + 'px';
+      heart.style.animationDuration = (Math.random() * 3 + 3) + 's';
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 6000);
+    }
+    setInterval(createHeart, 300);
+
+    // Başlat
+    showMessage(messages, () => {
+      showMessage(finalWords, () => {
+        messageEl.textContent = 'Seni her şeyden çok seviyorum 💞';
+        messageEl.classList.add('fade-in');
+        // Mektup animasyonu
+        setTimeout(() => {
+          envelope.classList.add('show-envelope');
+          setTimeout(() => {
+            letter.classList.add('show-letter');
+          }, 2000);
+        }, 3000);
+      });
+    });
+  </script>
+</body>
+</html>
