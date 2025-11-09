@@ -7,6 +7,61 @@
   <link rel="stylesheet" href="style.css">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824155279412452"
      crossorigin="anonymous"></script>
+  <style>
+    /* Friends list styles */
+  /* Layout: make the friends list take full content width and move controls under it */
+  .friends-wrapper { display: flex; flex-direction: column; gap: 14px; padding-left: 14px; padding-right: 14px; }
+  /* Expand friends list to use available width */
+  .friends-section { width: 100%; max-width: none; margin: 12px 0; padding: 32px; background: #232323; border-radius: 12px; box-shadow: 0 8px 22px rgba(0,0,0,0.45); min-height: 320px; }
+  /* Controls placed below the list, right aligned */
+  .friends-controls { display:flex; width:100%; justify-content:flex-end; gap:12px; margin-top: 0px; }
+  /* Make sure buttons have comfortable spacing and ignore any inline margin-top */
+  .friends-controls button { margin: 0 8px !important; }
+  .friends-controls .coolbtn { margin-top: 0 !important; }
+    /* Modal input/button tweaks */
+    .modal-body input { box-sizing: border-box; width: 100%; }
+    .modal-actions button { box-sizing: border-box; }
+  .empty-friends { padding:24px; color:#ccc; text-align:center; font-size:1rem; }
+    #friendsList { margin-top: 8px; }
+    .friend-item { display:flex; align-items:center; justify-content:space-between; background:#3a3a3a; padding:10px 12px; border-radius:10px; margin-bottom:8px; }
+  .friend-item { display:flex; align-items:center; justify-content:space-between; background:#3a3a3a; padding:14px 16px; border-radius:12px; margin-bottom:10px; min-width:280px; }
+  .friend-left { display:flex; align-items:center; gap:14px; }
+  .friend-text { display:flex; flex-direction:column; justify-content:center; }
+  .friend-avatar { width:56px; height:56px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.06); }
+  .friend-name { font-weight:700; color:#fff; font-size:1.05rem; }
+  .friend-id { font-size:0.88rem; color:#cfcfcf; opacity:0.9; margin-left:6px; }
+  .friend-actions { display:flex; gap:8px; align-items:center; }
+  .friend-actions button { padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
+    .friend-actions .remove { background:#e74c3c; color:#fff; }
+    .request-item { display:flex; align-items:center; justify-content:space-between; background:#333; padding:10px 12px; border-radius:10px; margin-bottom:8px; }
+    .request-left { display:flex; align-items:center; gap:10px; }
+    .request-actions button { margin-left:6px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer; }
+    .request-actions .accept { background:#2ecc71; color:#fff; }
+    .request-actions .decline { background:#e74c3c; color:#fff; }
+    /* Modal tweaks */
+    #addFriendModal { display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; }
+    #addFriendModal .modal-body { background:#2b2b2b; padding:18px; border-radius:10px; width:340px; max-width:92%; text-align:center; }
+    @media (max-width:480px){ .friend-avatar{width:40px;height:40px} .friend-name{font-size:0.95rem} }
+    @media (max-width:380px){
+      .friend-avatar{width:36px;height:36px}
+      .friend-name{font-size:0.9rem}
+      .friend-id{font-size:0.78rem}
+    }
+    /* Scrollbar styling for friends list (modern browsers) */
+    #friendsList { margin-top: 8px; max-height: 520px; overflow-y: auto; overflow-x: hidden; padding-right: 6px; }
+    /* webkit-based browsers */
+    #friendsList::-webkit-scrollbar { width: 10px; }
+    #friendsList::-webkit-scrollbar-track { background: transparent; }
+    #friendsList::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
+    #friendsList::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+    /* Firefox */
+    #friendsList { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+    @media (max-width:600px){
+      .friends-wrapper { flex-direction: column; }
+      .friends-controls { width:100%; flex-direction:row; justify-content:space-between; align-items:center; }
+      .friends-controls .coolbtn { flex: 1 1 auto; margin-left:6px; margin-right:6px; }
+    }
+  </style>
 </head>
 <body>
 
@@ -14,8 +69,15 @@
     <div class="profile-sidebar">
       <img src="/dosyalar/resimler/profiller/oyuncuPpVarsayılan.png" alt="Profil Fotoğrafı" id="profilePic">
       <h2 id="userName">Kullanıcı</h2>
-      <p id="userEmail">Yükleniyor...</p>
-      <button id="logoutBtn">Çıkış Yap</button>
+  <div style="font-size:0.9em;color:#bbb;margin-bottom:10px;" id="userIdCode">ID: yükleniyor...</div>
+        <p id="userEmail">Yükleniyor...</p>
+        <div id="coinArea" style="margin-top:8px;padding:8px 10px;background:#1f1f1f;border-radius:8px;color:#fff;display:flex;align-items:center;gap:8px;">
+          <img src="/dosyalar/resimler/coin.png" alt="coin" style="width:20px;height:20px;opacity:0.95"> 
+          <div style="font-weight:700;">Coin:</div>
+          <div id="coinCount" style="font-size:1.05rem;color:#ffd24a;">0</div>
+        </div>
+        <button id="openMarketBtn" style="margin-top:22px;padding:8px 10px;background:#ffd24a;border:none;border-radius:8px;cursor:pointer;font-weight:700;color:#111;">Market</button>
+      <button id="logoutBtn" style="margin-top:12px;margin-bottom:12px;">Çıkış Yap</button>
       <a href="profilDuzenle.html">
         <button id="anaMenüBtn">Profili Düzenle</button>
       </a>
@@ -23,17 +85,71 @@
         <button id="anaMenüBtn">Ana Menü</button>
       </a>
     </div>  
-<!--
-<div id="coinDisplay">Coins: 0</div>
-<div id="dailyRewardContainer">
-  <button id="dailyRewardBtn">Günlük 10 Coin Al</button>
-  <span id="dailyRewardTimer"></span>
-</div>
--->
 
-Bu Bölüm Yakında Eklenecek...
+<!-- Arkadaş listesi (üstte) + kontrol düğmeleri köşede -->
+<div class="friends-wrapper">
+  <div class="friends-section">
+    <div id="friendsList"></div>
+  </div>
+  <div class="friends-controls">
+    <button id="openAddFriendBtn" class="coolbtn" style="padding:8px 12px;font-size:0.9rem;">Arkadaş Ekle</button>
+    <button id="showIncomingBtn" class="coolbtn" style="padding:8px 12px;font-size:0.85rem;margin-top:6px;">Gelen İstekler</button>
+    <button id="showStatsBtn" class="coolbtn" style="padding:8px 12px;font-size:0.85rem;margin-top:6px;">Oyun İstatistikleri</button>
+  </div>
+</div>
+
+<!-- Add Friend Modal -->
+<div id="addFriendModal" style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;">
+  <div class="modal-body" style="background:#2b2b2b;padding:20px;border-radius:10px;width:320px;max-width:90%;text-align:center;">
+    <h3>Arkadaş Ekle</h3>
+    <p style="font-size:0.9em;color:#ddd;margin-bottom:8px;">11 haneli arkadaş ID'sini gir</p>
+    <input id="friendIdInput" class="cooltextbox" placeholder="Ör: 12345678901" style="width:100%;margin-bottom:12px;box-sizing:border-box;">
+    <div class="modal-actions" style="display:flex;gap:8px;justify-content:space-between;">
+      <button id="confirmAddFriendBtn" class="coolbtn" style="padding:8px 10px;font-size:0.9rem;width:48%">Gönder</button>
+      <button id="closeAddFriendBtn" style="padding:8px 10px;background:#ff4b4b;border:none;border-radius:8px;color:#fff;width:48%">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<!-- Incoming requests modal -->
+<div id="incomingModal" style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;">
+  <div class="modal-body" style="background:#2b2b2b;padding:18px;border-radius:10px;width:360px;max-width:92%;text-align:left;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 style="margin:0;color:#fff;">Gelen İstekler</h3>
+      <button id="closeIncomingBtn" style="background:#ff4b4b;border:none;border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer;">Kapat</button>
+    </div>
+    <div id="incomingRequests">
+      <!-- istekler buraya JS ile eklenecek; boşsa JS 'Burası boş görünüyor' yazacak -->
+    </div>
+  </div>
+</div>
+
+<!-- Game statistics modal -->
+<div id="statsModal" style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.6);justify-content:center;align-items:center;">
+  <div class="modal-body" style="background:#2b2b2b;padding:18px;border-radius:10px;width:420px;max-width:94%;text-align:left;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 style="margin:0;color:#fff;">Oyun İstatistikleri</h3>
+      <button id="closeStatsBtn" style="background:#ff4b4b;border:none;border-radius:8px;color:#fff;padding:6px 10px;cursor:pointer;">Kapat</button>
+    </div>
+      <div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+        <label for="statsGameSelect" style="color:#ddd;margin:0;font-size:0.95rem;">Oyun:</label>
+        <select id="statsGameSelect" style="padding:6px;border-radius:6px;background:#222;color:#fff;border:1px solid rgba(255,255,255,0.06);">
+          <option value="balon">Balon Patlatmaca</option>
+    <option value="oyun2048">2048</option>
+    <option value="desen">Desen Bulma</option>
+          <!-- ileride buraya diğer oyunlar eklenebilir -->
+        </select>
+      </div>
+    <div id="statsContent" style="color:#ddd;">Yükleniyor...</div>
+  </div>
+</div>
+
+<!-- Gelen/Gönderilen istekler modalları: tek Incoming modal eklendi -->
+
+<!-- Alt: (ekleme butonu artık köşede) -->
+
 
   <script type="module" src="script.js"></script>
-  <script type="module" src="script2.js"></script>
+  <script type="module" src="arkadaslik.js"></script>
 </body>
 </html>

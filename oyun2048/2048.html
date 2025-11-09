@@ -307,7 +307,7 @@
       let changed = false;
       for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (board[r][c] !== newBoard[r][c]) changed = true;
       if (!changed) {
-        if (isGameOver()) { messageElement.style.display = 'block'; }
+      if (isGameOver()) { handleGameOver(); }
         return;
       }
 
@@ -373,7 +373,7 @@
         renderStaticFromBoard();
         spawnTile();
         animating = false;
-        if (isGameOver()) { messageElement.style.display = 'block'; }
+        if (isGameOver()) { handleGameOver(); }
       }, 200); // daha kısa süre: hareket bitince hemen finalize
     }
 
@@ -433,6 +433,62 @@
     });
 
     messageElement.addEventListener('click', () => { newGame(); });
+    
+    // Compute a simple score (sum of all tiles) and handle game over: show message and try to save score
+    function computeCurrentScore() {
+      let s = 0;
+      for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) s += (board[r][c] || 0);
+      return s;
+    }
+
+    function handleGameOver(){
+      // show UI
+      messageElement.style.display = 'block';
+      try{
+        const score = computeCurrentScore();
+        // try to save score (safe): initialize firebase locally and write to profiles/<uid>.oyun2048_scores
+        save2048Score(score);
+      }catch(e){ console.warn('Could not save 2048 score', e); }
+    }
+
+    // Save helper for 2048: writes to profiles/<uid>.oyun2048_scores array
+    function save2048Score(score){
+      try{
+        // lazy-load firebase modules (browser globals via dynamic import)
+        (async ()=>{
+          const { initializeApp } = await import('https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js');
+          const { getAuth, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js');
+          const { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, increment } = await import('https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js');
+          const firebaseConfig = {
+            apiKey: "AIzaSyBqDkByV-2mdZOSP98kvTps5Yyhcw52ypM",
+            authDomain: "pleahunt.firebaseapp.com",
+            projectId: "pleahunt",
+            storageBucket: "pleahunt.firebasestorage.app",
+            messagingSenderId: "760890872647",
+            appId: "1:760890872647:web:1684673d65f8282ffe7262"
+          };
+          const app = initializeApp(firebaseConfig);
+          const auth = getAuth(app);
+          const db = getFirestore(app);
+          onAuthStateChanged(auth, async (user)=>{
+            if (!user) return; // not logged in
+            const uid = user.uid;
+            const ref = doc(db, 'profiles', uid);
+            const snap = await getDoc(ref);
+            if (!snap.exists()){
+              await setDoc(ref, { oyun2048_scores: [] }, { merge: true });
+            }
+            const entry = { score: Number(score), at: new Date().toISOString() };
+            await updateDoc(ref, { oyun2048_scores: arrayUnion(entry) });
+            try{
+              const coinsEarned = Math.floor(Number(score) / 200);
+              if (coinsEarned > 0) await updateDoc(ref, { coins: increment(coinsEarned) });
+            }catch(e){ console.warn('2048 coin award failed', e); }
+            console.log('Saved 2048 score', entry);
+          });
+        })();
+      }catch(e){ console.warn('save2048Score failed', e); }
+    }
   </script>
 </body>
 </html>

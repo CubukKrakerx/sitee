@@ -254,3 +254,64 @@ margin-left:20px;
     text-align: center;
 }
   
+#addFriendSection {
+    margin-bottom: 20px;
+}
+
+#addFriendSection input {
+    padding: 6px 10px;
+    margin-right: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#addFriendBtn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    background-color: #4caf50;
+    color: white;
+    cursor: pointer;
+}
+
+#addFriendBtn:hover {
+    background-color: #45a049;
+}
+
+#incomingRequests, #friendsList {
+  color: #000; /* metinlerin açık zeminlerde okunaklı olması için siyah yap */
+}
+
+#incomingRequests div, #friendsList div {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background-color: #f7f7f7;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #000; /* iç divlerde de siyah metin */
+}
+
+#incomingRequests button, #friendsList button {
+    margin-left: 5px;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#incomingRequests button.accept {
+    background-color: #4caf50;
+    color: white;
+}
+
+#incomingRequests button.decline {
+    background-color: #f44336;
+    color: white;
+}
+
+#friendsList button.remove {
+    background-color: #f44336;
+    color: white;
+}

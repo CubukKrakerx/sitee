@@ -393,6 +393,8 @@ const TYPE_PROBS = [
     running = false;
     finalScore.textContent = score;
     overlay.classList.add('show');
+    // Try to save the score to Firestore if saveGameScore is available
+    try{ if(window.saveGameScore) window.saveGameScore(score); }catch(e){ console.warn('saveGameScore failed', e); }
   }
   retryBtn.addEventListener('click', () => {
     // reset
@@ -542,6 +544,51 @@ function render(){
   window._state = () => ({score,lives,balloons:balloons.length,effects});
 
 })();
+</script>
+<!-- Firestore save helper: saves balon score to the user's profile (if logged in) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+  import { getFirestore, doc, updateDoc, arrayUnion, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+  // Use same config as main app
+  const firebaseConfig = {
+    apiKey: "AIzaSyBqDkByV-2mdZOSP98kvTps5Yyhcw52ypM",
+    authDomain: "pleahunt.firebaseapp.com",
+    projectId: "pleahunt",
+    storageBucket: "pleahunt.firebasestorage.app",
+    messagingSenderId: "760890872647",
+    appId: "1:760890872647:web:1684673d65f8282ffe7262"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Expose global helper used by game script
+  window.saveGameScore = async function(score){
+    try{
+      // wait for auth state
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) return; // not logged in
+        const uid = user.uid;
+        const ref = doc(db, 'profiles', uid);
+        // ensure profile exists (create minimal if missing)
+        const snap = await getDoc(ref);
+        if (!snap.exists()){
+          await setDoc(ref, { balonPatlatmaca_scores: [], coins: 0 }, { merge: true });
+        }
+        const entry = { score: Number(score), at: new Date().toISOString() };
+        await updateDoc(ref, { balonPatlatmaca_scores: arrayUnion(entry) });
+        // award coins based on score (hard to earn)
+        try{
+          const coinsEarned = Math.floor(Number(score) / 200);
+          if (coinsEarned > 0) await updateDoc(ref, { coins: increment(coinsEarned) });
+        }catch(e){ console.warn('coin award failed', e); }
+        console.log('Saved balon score', entry);
+      });
+    }catch(e){ console.error('Could not save score', e); }
+  };
 </script>
 </body>
 </html>

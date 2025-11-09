@@ -66,6 +66,8 @@ onAuthStateChanged(auth, async (user) => {
       const profilePicEl = document.getElementById("profilePic");
       if(profilePicEl) profilePicEl.src = selectedAvatar;
     }
+    // keep original name to check whether it changed
+    const originalName = data.names || "";
   }
 
   // ----------------------------
@@ -73,34 +75,62 @@ onAuthStateChanged(auth, async (user) => {
   // ----------------------------
   saveBtn.addEventListener("click", async () => {
     const username = newNameInput.value.trim();
-    if (!username || !selectedAvatar) {
-      alert("Lütfen isim ve avatar seçin!");
+    if (!username) {
+      alert("Lütfen bir isim girin!");
       return;
     }
 
-    // Haftalık isim değiştirme kontrolü
-    let canUpdate = true;
-    docSnap = await getDoc(userRef); // tekrar güncel veri çek
-    if (docSnap.exists() && docSnap.data().lastNameUpdate) {
-      const last = docSnap.data().lastNameUpdate.toDate();
-      const now = new Date();
-      const oneWeek = 7*24*60*60*1000;
-      if (now - last < oneWeek) {
-        canUpdate = false;
-        alert("İsminizi haftada sadece 1 kez değiştirebilirsiniz!");
-        return;
+    // Eğer avatar seçilmemişse, mevcut avatarı kullan (selectedAvatar zaten yüklenmiş olabilir)
+    if (!selectedAvatar) {
+      // try to read existing avatar from profile
+      const s = await getDoc(userRef);
+      if (s.exists() && s.data().avatars) selectedAvatar = s.data().avatars;
+    }
+
+    // Eğer isim değişmemişse: sadece avatarı güncellemesine izin ver
+    const nameChanged = (typeof originalName !== 'undefined') ? (username !== originalName) : true;
+
+    // Haftalık isim değiştirme kontrolü yalnızca isim değiştiyse uygulanır
+    if (nameChanged) {
+      docSnap = await getDoc(userRef); // güncel veri
+      if (docSnap.exists() && docSnap.data().lastNameUpdate) {
+        const last = docSnap.data().lastNameUpdate.toDate();
+        const now = new Date();
+        const oneWeek = 7*24*60*60*1000;
+        if (now - last < oneWeek) {
+          alert("İsminizi haftada sadece 1 kez değiştirebilirsiniz!");
+          return;
+        }
       }
     }
 
-    if (canUpdate) {
-      await setDoc(userRef, {
-        names: username,
-        avatars: selectedAvatar,
-        lastNameUpdate: new Date()
-      }, { merge: true }); // merge:true ile mevcut veriyi güncelle
-
-      // Başarıyla kaydedilince yönlendirme
-      window.location.href = "profil.html";
+    // Hazırlanacak güncelleme objesi
+    const updates = { avatars: selectedAvatar };
+    if (nameChanged) {
+      updates.names = username;
+      updates.lastNameUpdate = new Date();
     }
+
+    await setDoc(userRef, updates, { merge: true });
+
+    // Başarıyla kaydedilince yönlendirme
+    window.location.href = "profil.html";
   });
+
+  // Avatar-only save button (günlük/haftalık isim kısıtlamasına takılmadan avatar değişikliği yapar)
+  const saveAvatarBtn = document.getElementById('saveAvatarBtn');
+  if (saveAvatarBtn) {
+    saveAvatarBtn.addEventListener('click', async () => {
+      // ensure we have selectedAvatar or fallback to existing
+      if (!selectedAvatar) {
+        const s = await getDoc(userRef);
+        if (s.exists() && s.data().avatars) selectedAvatar = s.data().avatars;
+      }
+      if (!selectedAvatar) { alert('Lütfen bir avatar seçin!'); return; }
+      await setDoc(userRef, { avatars: selectedAvatar }, { merge: true });
+      alert('Avatarınız güncellendi.');
+      // redirect back to profile
+      window.location.href = 'profil.html';
+    });
+  }
 });
