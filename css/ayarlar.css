@@ -48,10 +48,17 @@ body {
     background-repeat: no-repeat;
 }
 
+.button-container {
+    display: grid;
+    grid-template-columns: repeat(5, 225px);
+    gap: 20px;
+    justify-content: center;
+    margin: 20px;
+}
+
 .button {
     width: 225px;
     height: 50px;
-    margin: 20px;
     font-weight: bold;
     border-radius: 10px;
     border: none;
@@ -109,12 +116,17 @@ body {
         font-size: 16px;
     }
 
+    .button-container {
+        grid-template-columns: 1fr; /* mobil için 1 sütun */
+        gap: 10px;
+    }
+
     .button {
         width: 90%;          /* tam genişlik buton */
         height: 45px;
-        margin: 10px auto;
-        display: block;      /* alt alta gelsin */
+        margin: 0 auto;
         font-size: 16px;
+        display: block;      /* alt alta gelsin */
     }
 
     .music-controls {
