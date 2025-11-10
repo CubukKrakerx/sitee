@@ -62,7 +62,7 @@
       .friends-controls .coolbtn { flex: 1 1 auto; margin-left:6px; margin-right:6px; }
     }
 
-    /* Mobil düzen: Profil bilgileri yukarıda, arkadaş listesi aşağıda */
+    /* Mobil düzen: Profil bilgileri yukarıda, arkadaş listesi aşağıda (küçültülmüş) */
     @media (max-width: 768px) {
       .profile-container {
         display: flex;
@@ -70,24 +70,50 @@
       }
       .profile-sidebar {
         order: 1;
-        padding: 20px;
+        padding: 15px;
         text-align: center;
+        margin-bottom: 10px;
+      }
+      .profile-sidebar img {
+        width: 80px;
+        height: 80px;
+        margin-bottom: 10px;
+      }
+      .profile-sidebar h2 {
+        font-size: 1.2em;
+        margin-bottom: 5px;
+      }
+      .profile-sidebar p, .profile-sidebar div {
+        font-size: 0.9em;
+        margin-bottom: 8px;
+      }
+      .profile-sidebar button {
+        width: 100%;
+        margin: 5px 0;
+        padding: 10px;
       }
       .friends-wrapper {
         order: 2;
-        padding: 10px;
+        padding: 5px;
       }
       .friends-section {
-        padding: 20px;
-        min-height: 200px;
+        padding: 15px;
+        min-height: 150px;
+        margin: 5px 0;
       }
       .friends-controls {
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
+        margin-top: 10px;
       }
       .friends-controls .coolbtn {
         width: 100%;
         margin: 0;
+        padding: 10px;
+        font-size: 0.9em;
+      }
+      #friendsList {
+        max-height: 300px;
       }
     }
   </style>
