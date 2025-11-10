@@ -35,15 +35,17 @@ let selectedAvatar = null;
 // ----------------------------
 // 🎨 Avatar seçimi
 // ----------------------------
-document.querySelectorAll(".avatar-option").forEach(img => {
-  img.addEventListener("click", () => {
-    selectedAvatar = img.src;
-    document.querySelectorAll(".avatar-option").forEach(i => i.style.border = "");
-    img.style.border = "2px solid #0a84ff";
-    const profilePicEl = document.getElementById("profilePic");
-    if(profilePicEl) profilePicEl.src = selectedAvatar;
+function setupAvatarSelection() {
+  document.querySelectorAll(".avatar-option").forEach(img => {
+    img.addEventListener("click", () => {
+      selectedAvatar = img.src;
+      document.querySelectorAll(".avatar-option").forEach(i => i.style.border = "");
+      img.style.border = "2px solid #0a84ff";
+      const profilePicEl = document.getElementById("profilePic");
+      if(profilePicEl) profilePicEl.src = selectedAvatar;
+    });
   });
-});
+}
 
 // ----------------------------
 // 🔐 Kullanıcı oturumu kontrol ve veri çekme
@@ -69,6 +71,32 @@ onAuthStateChanged(auth, async (user) => {
     // keep original name to check whether it changed
     const originalName = data.names || "";
   }
+
+  // Marketten alınan öğeleri kontrol et ve avatar seçeneklerine ekle
+  const ownedItems = docSnap.exists() ? (docSnap.data().ownedItems || []) : [];
+  const avatarSelectDiv = document.querySelector("#avatarSelect div");
+  if (avatarSelectDiv) {
+    // Market öğelerini ekle (sadece satın alındıysa)
+    if (ownedItems.includes('pp1')) {
+      const pp1Img = document.createElement('img');
+      pp1Img.src = '/dosyalar/resimler/profiller/pp1.png';
+      pp1Img.className = 'avatar-option';
+      pp1Img.width = 50;
+      pp1Img.height = 50;
+      avatarSelectDiv.appendChild(pp1Img);
+    }
+    if (ownedItems.includes('pp2')) {
+      const pp2Img = document.createElement('img');
+      pp2Img.src = '/dosyalar/resimler/profiller/pp2.png';
+      pp2Img.className = 'avatar-option';
+      pp2Img.width = 50;
+      pp2Img.height = 50;
+      avatarSelectDiv.appendChild(pp2Img);
+    }
+  }
+
+  // Avatar seçimi olaylarını ayarla (mevcut + yeni eklenenler için)
+  setupAvatarSelection();
 
   // ----------------------------
   // 💾 Kaydetme işlemi
