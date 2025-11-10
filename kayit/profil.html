@@ -95,8 +95,9 @@
       }
       .profile-sidebar button {
         width: 100%;
-        margin: 5px 0;
-        padding: 10px;
+        margin: 3px 0;
+        padding: 8px;
+        font-size: 0.9em;
       }
       .friends-wrapper {
         order: 2;
@@ -115,11 +116,56 @@
       .friends-controls .coolbtn {
         width: 100%;
         margin: 0;
-        padding: 10px;
-        font-size: 0.9em;
+        padding: 8px;
+        font-size: 0.85em;
       }
       #friendsList {
         max-height: 300px;
+      }
+      /* Arkadaş öğeleri mobil için sütun düzeninde */
+      .friend-item {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 12px;
+      }
+      .friend-left {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .friend-avatar {
+        width: 60px;
+        height: 60px;
+      }
+      .friend-text {
+        align-items: center;
+      }
+      .friend-name {
+        font-size: 1em;
+        margin-bottom: 4px;
+      }
+      .friend-id {
+        font-size: 0.85em;
+        margin-bottom: 8px;
+      }
+      .friend-actions {
+        flex-direction: row;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .friend-actions button {
+        padding: 6px 8px;
+        font-size: 0.8em;
+      }
+      /* İstatistik bölümü ekleme */
+      .friend-stats {
+        margin-top: 8px;
+        padding: 6px 10px;
+        background: #2a2a2a;
+        border-radius: 6px;
+        font-size: 0.8em;
+        color: #ccc;
+        text-align: center;
       }
     }
   </style>
