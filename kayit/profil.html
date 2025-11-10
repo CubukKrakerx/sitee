@@ -61,6 +61,35 @@
       .friends-controls { width:100%; flex-direction:row; justify-content:space-between; align-items:center; }
       .friends-controls .coolbtn { flex: 1 1 auto; margin-left:6px; margin-right:6px; }
     }
+
+    /* Mobil düzen: Profil bilgileri yukarıda, arkadaş listesi aşağıda */
+    @media (max-width: 768px) {
+      .profile-container {
+        display: flex;
+        flex-direction: column;
+      }
+      .profile-sidebar {
+        order: 1;
+        padding: 20px;
+        text-align: center;
+      }
+      .friends-wrapper {
+        order: 2;
+        padding: 10px;
+      }
+      .friends-section {
+        padding: 20px;
+        min-height: 200px;
+      }
+      .friends-controls {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .friends-controls .coolbtn {
+        width: 100%;
+        margin: 0;
+      }
+    }
   </style>
 </head>
 <body>
