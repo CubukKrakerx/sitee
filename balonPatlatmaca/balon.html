@@ -1,4 +1,4 @@
-<!doctype html>
+  <!doctype html>
 <html lang="tr">
 <head>
 <meta charset="utf-8" />
@@ -62,7 +62,8 @@ const TYPE_PROBS = [
     {type:'mult',       prob:3,   emoji:'✖️2'},   // %4
     {type:'slow',       prob:4,   emoji:'🐢'},    // %5
     {type:'split',      prob:11,  emoji:'🔵'},
-    {type:'normal',     prob:76.8,emoji:''}       // normal artık emojisiz
+    {type:'life',       prob:2,   emoji:'❤️'},
+    {type:'normal',     prob:77.3,emoji:''}
 ];
 
 
@@ -134,7 +135,7 @@ const TYPE_PROBS = [
   // ---------- BALLOON CLASS ----------
   class Balloon {
     constructor(opts = {}) {
-      this.type = opts.type || chooseType(); // normal | explosive | crazy | mult | slow | split
+      this.type = opts.type || chooseType(); // normal | explosive | crazy | mult | slow | split | life
       this.emoji = getEmojiForType(this.type);
       this.r = opts.r || rand(18,44);
       this.x = opts.x || this.r + Math.random()*(W - this.r*2);
@@ -146,6 +147,7 @@ const TYPE_PROBS = [
       this.popped = false;
       this.colorHue = randInt(0,360);
       this.splitCount = 0; // how many times it already split
+      this.hp = 1; // default hp
       // crazy type shows emoji prominently; normal can show emoji too (🎈)
       if(this.type === 'crazy'){ this.emoji = '🤪'; }
     }
@@ -153,10 +155,17 @@ const TYPE_PROBS = [
       // apply global slow/crazy multipliers
       let globalFactor = 1;
       if(effects.slowActive) globalFactor *= 0.5; // slow effect reduces speed
-      if(effects.crazyActive) globalFactor *= 0.2; // crazy slows a bit too
       this.speed = this.baseSpeed * globalFactor;
       this.y -= this.speed * dt;
       this.x += Math.sin(this.phase + this.y/80) * (this.sway * dt);
+      // prevent going off-screen left/right
+      if(this.x - this.r < 0){
+        this.x = this.r;
+        this.sway = -this.sway; // bounce
+      } else if(this.x + this.r > W){
+        this.x = W - this.r;
+        this.sway = -this.sway; // bounce
+      }
     }
     draw(gctx){
       // Draw balloon body (circle) with gradient
@@ -207,6 +216,7 @@ const TYPE_PROBS = [
       case 'mult':      return '✖️';
       case 'slow':      return '🐢';
       case 'split':     return '🔵';
+      case 'life':      return '❤️';
     }
   }
 
@@ -246,10 +256,32 @@ const TYPE_PROBS = [
   function popBalloonAtIndex(i){
     const b = balloons[i];
     if(!b) return;
+
+    // For balloons with hp > 1 (like boss), decrease hp instead of popping
+    if(b.hp > 1){
+      b.hp--;
+      // particle + pop sound for hit
+      spawnParticles(b.x, b.y, Math.max(4, Math.round(b.r/8)));
+      popSound();
+      // score for hit
+      let baseScore = 1;
+      let totalMultiplier = 1;
+      if(effects.multActive) totalMultiplier *= 2;
+      if(effects.crazyActive) totalMultiplier *= 5;
+      const gained = Math.round(baseScore * totalMultiplier);
+      score += gained;
+      scoreEl.textContent = score;
+      return; // don't remove yet
+    }
+
     // Score calculation: base + multipliers
     let baseScore = 1;
     if(b.type === 'explosive') baseScore = 1;
     if(b.type === 'split') baseScore = 1;
+    if(b.type === 'boss'){
+      baseScore = 10; // boss gives more score
+      bossActive = false; // boss defeated, allow spawning again
+    }
     // crazy multiplier 5x, mult 2x
     let totalMultiplier = 1;
     if(effects.multActive) totalMultiplier *= 2;
@@ -306,6 +338,14 @@ const TYPE_PROBS = [
       return;
     }
 
+    if(b.type === 'life'){
+      // give extra life
+      lives++;
+      livesEl.textContent = lives;
+      balloons.splice(i,1);
+      return;
+    }
+
     if(b.type === 'crazy'){
       // activate crazy effect
       activateEffect('crazy', DURATION.crazy);
@@ -326,7 +366,7 @@ const TYPE_PROBS = [
       return;
     }
 
-    // normal default removal
+    // normal and boss default removal
     balloons.splice(i,1);
   }
 
@@ -403,6 +443,8 @@ const TYPE_PROBS = [
     effects.multActive = effects.slowActive = effects.crazyActive = false;
     effects.multTimer = effects.slowTimer = effects.crazyTimer = 0;
     balloons = []; particles = [];
+    bossActive = false;
+    currentBossIndex = 0;
     livesEl.textContent = lives;
     scoreEl.textContent = score;
     running = true;
@@ -476,11 +518,14 @@ const TYPE_PROBS = [
 const crazyColors = [
   '#ff0000','#00ff00','#0000ff','#ffff00',
   '#ff00ff','#00ffff','#ffa500','#800080',
-  '#008000','#ff1493'
+  '#008000','#ff1493','#ff4500','#32cd32',
+  '#1e90ff','#ffd700','#da70d6','#00ced1',
+  '#ff6347','#228b22','#4169e1','#ffffe0'
 ];
 let crazyIndex = 0;
+let crazySpeed = 0; // to make it faster
 
-function render(){
+  function render(){
   // background
   if(effects.crazyActive){
     document.body.style.background = `linear-gradient(180deg, ${crazyColors[crazyIndex % crazyColors.length]}, ${crazyColors[(crazyIndex+1) % crazyColors.length]})`;
@@ -503,22 +548,7 @@ function render(){
     ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
     ctx.fill();
   }
-
-    // clear
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-
-    // draw balloons
-    for(const b of balloons) b.draw(ctx);
-
-    // draw particles
-    for(const p of particles){
-      ctx.beginPath();
-      const alpha = Math.max(0, 1 - p.t / p.life);
-      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
-      ctx.fill();
-    }
-  }
+}
 
   // ---------- INIT ----------
   function init(){
