@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="tr">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taş Kağıt Makas</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      height: 100%;
+      width: 100%;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .game-wrapper {
+      width: 100%;
+      min-height: 100%;
+      background: linear-gradient(90deg, 
+        #ff0000 0%,
+        #ff7f00 16.67%,
+        #ffff00 33.33%,
+        #00ff00 50%,
+        #0000ff 66.67%,
+        #4b0082 83.33%,
+        #9400d3 100%
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      animation: rainbowShift 8s linear infinite;
+      background-size: 200% 100%;
+    }
+
+    @keyframes rainbowShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    .game-container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      color: #667eea;
+      margin: 0 0 16px 0;
+      font-size: 38px;
+      font-weight: bold;
+    }
+
+    .instructions {
+      text-align: center;
+      color: #666;
+      margin: 0 0 32px 0;
+      font-size: 16px;
+    }
+
+    .scoreboard {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-bottom: 32px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 12px;
+    }
+
+    .score-item {
+      text-align: center;
+    }
+
+    .score-label {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .score-value {
+      font-size: 36px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .choices-container {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .choice-btn {
+      background: white;
+      border: 3px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      min-width: 100px;
+    }
+
+    .choice-btn:hover:not(:disabled) {
+      transform: translateY(-4px);
+      border-color: #667eea;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    .choice-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .choice-icon {
+      font-size: 56px;
+    }
+
+    .choice-name {
+      font-size: 14px;
+      font-weight: bold;
+      color: #666;
+    }
+
+    .countdown-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .countdown-overlay.show {
+      display: flex;
+    }
+
+    .countdown-text {
+      font-size: 120px;
+      font-weight: bold;
+      color: white;
+      animation: countPulse 0.8s ease;
+    }
+
+    @keyframes countPulse {
+      0% { transform: scale(0.5); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .result-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-modal.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .result-container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px 32px;
+      max-width: 500px;
+      width: 100%;
+      animation: slideIn 0.4s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .battle-display {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      margin-bottom: 32px;
+    }
+
+    .battle-item {
+      text-align: center;
+    }
+
+    .battle-icon {
+      font-size: 100px;
+      margin-bottom: 12px;
+    }
+
+    .battle-label {
+      font-size: 14px;
+      font-weight: bold;
+      color: #999;
+      text-transform: uppercase;
+    }
+
+    .vs-text {
+      font-size: 28px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .result-text {
+      text-align: center;
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .result-text.win {
+      color: #51cf66;
+    }
+
+    .result-text.lose {
+      color: #ff6b6b;
+    }
+
+    .result-text.draw {
+      color: #ffa500;
+    }
+
+    .result-explanation {
+      text-align: center;
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 32px;
+    }
+
+    .play-again-btn {
+      width: 100%;
+      padding: 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .play-again-btn:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+    }
+
+    .reset-btn {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      color: #999;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .reset-btn:hover {
+      border-color: #ff6b6b;
+      color: #ff6b6b;
+    }
+
+    @media (max-width: 600px) {
+      .game-container {
+        padding: 24px 16px;
+      }
+
+      h1 {
+        font-size: 32px;
+      }
+
+      .instructions {
+        font-size: 16px;
+      }
+
+      .choices-container {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .choice-icon {
+        font-size: 48px;
+      }
+
+      .score-value {
+        font-size: 36px;
+      }
+
+      .battle-icon {
+        font-size: 60px;
+      }
+
+      .result-text {
+        font-size: 24px;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <main class="game-wrapper">
+   <div class="game-container">
+    <h1 id="game-title">✊ Taş Kağıt Makas ✋</h1>
+    <p class="instructions" id="instruction-text">Seçimini yap ve bilgisayarı yen!</p>
+    <div class="scoreboard">
+     <div class="score-item">
+      <div class="score-label" id="player-label">
+       Sen
+      </div>
+      <div class="score-value" id="player-score">
+       0
+      </div>
+     </div>
+     <div class="score-item">
+      <div class="score-label" id="computer-label">
+       Bilgisayar
+      </div>
+      <div class="score-value" id="computer-score">
+       0
+      </div>
+     </div>
+    </div>
+    <div class="choices-container" id="choices-container"><button class="choice-btn" data-choice="rock">
+      <div class="choice-icon">
+       ✊
+      </div>
+      <div class="choice-name">
+       Taş
+      </div></button> <button class="choice-btn" data-choice="paper">
+      <div class="choice-icon">
+       ✋
+      </div>
+      <div class="choice-name">
+       Kağıt
+      </div></button> <button class="choice-btn" data-choice="scissors">
+      <div class="choice-icon">
+       ✌️
+      </div>
+      <div class="choice-name">
+       Makas
+      </div></button>
+    </div><button class="reset-btn" id="reset-btn">Skoru Sıfırla</button>
+   </div>
+   <div class="countdown-overlay" id="countdown-overlay">
+    <div class="countdown-text" id="countdown-text">
+     TAŞ
+    </div>
+   </div>
+   <div class="result-modal" id="result-modal">
+    <div class="result-container">
+     <div class="battle-display">
+      <div class="battle-item">
+       <div class="battle-icon" id="player-choice-icon">
+        ❓
+       </div>
+       <div class="battle-label" id="player-battle-label">
+        Sen
+       </div>
+      </div>
+      <div class="vs-text">
+       VS
+      </div>
+      <div class="battle-item">
+       <div class="battle-icon" id="computer-choice-icon">
+        ❓
+       </div>
+       <div class="battle-label" id="computer-battle-label">
+        Bilgisayar
+       </div>
+      </div>
+     </div>
+     <div class="result-text" id="result-text">
+      -
+     </div>
+     <div class="result-explanation" id="result-explanation">
+      -
+     </div><button class="play-again-btn" id="play-again-btn">Tekrar Oyna</button>
+    </div>
+   </div>
+  </main>
+  <script>
+    const defaultConfig = {
+      game_title: "✊ Taş Kağıt Makas ✋",
+      instruction_text: "Seçimini yap ve bilgisayarı yen!",
+      player_label: "Sen",
+      computer_label: "Bilgisayar",
+      primary_color: "#667eea",
+      secondary_color: "#764ba2"
+    };
+
+    let playerScore = 0;
+    let computerScore = 0;
+
+    const choices = {
+      rock: { name: 'Taş', icon: '✊', beats: 'scissors' },
+      paper: { name: 'Kağıt', icon: '✋', beats: 'rock' },
+      scissors: { name: 'Makas', icon: '✌️', beats: 'paper' }
+    };
+
+    const choiceButtons = document.querySelectorAll('.choice-btn');
+    const countdownOverlay = document.getElementById('countdown-overlay');
+    const countdownText = document.getElementById('countdown-text');
+    const resultModal = document.getElementById('result-modal');
+    const playerChoiceIcon = document.getElementById('player-choice-icon');
+    const computerChoiceIcon = document.getElementById('computer-choice-icon');
+    const resultText = document.getElementById('result-text');
+    const resultExplanation = document.getElementById('result-explanation');
+    const playerScoreEl = document.getElementById('player-score');
+    const computerScoreEl = document.getElementById('computer-score');
+    const playAgainBtn = document.getElementById('play-again-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    choiceButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const playerChoice = btn.dataset.choice;
+        playGame(playerChoice);
+      });
+    });
+
+    async function playGame(playerChoice) {
+      // Butonları devre dışı bırak
+      choiceButtons.forEach(btn => btn.disabled = true);
+
+      // Sayaç göster
+      countdownOverlay.classList.add('show');
+      
+      const countdownWords = ['TAŞ', 'KAĞIT', 'MAKAS'];
+      
+      for (let i = 0; i < 3; i++) {
+        countdownText.textContent = countdownWords[i];
+        countdownText.style.animation = 'none';
+        setTimeout(() => {
+          countdownText.style.animation = 'countPulse 0.8s ease';
+        }, 10);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      countdownOverlay.classList.remove('show');
+
+      // Bilgisayar seçimi yap
+      const computerChoice = getComputerChoice();
+      const result = determineWinner(playerChoice, computerChoice);
+
+      // Sonuçları göster
+      displayResults(playerChoice, computerChoice, result);
+
+      // Butonları tekrar aktif et
+      choiceButtons.forEach(btn => btn.disabled = false);
+    }
+
+    function getComputerChoice() {
+      const choiceKeys = Object.keys(choices);
+      const randomIndex = Math.floor(Math.random() * choiceKeys.length);
+      return choiceKeys[randomIndex];
+    }
+
+    function determineWinner(playerChoice, computerChoice) {
+      if (playerChoice === computerChoice) {
+        return 'draw';
+      }
+
+      if (choices[playerChoice].beats === computerChoice) {
+        playerScore++;
+        playerScoreEl.textContent = playerScore;
+        return 'win';
+      } else {
+        computerScore++;
+        computerScoreEl.textContent = computerScore;
+        return 'lose';
+      }
+    }
+
+    function displayResults(playerChoice, computerChoice, result) {
+      playerChoiceIcon.textContent = choices[playerChoice].icon;
+      computerChoiceIcon.textContent = choices[computerChoice].icon;
+
+      resultText.className = 'result-text ' + result;
+
+      if (result === 'win') {
+        resultText.textContent = '🎉 Kazandın!';
+        resultExplanation.textContent = `${choices[playerChoice].name}, ${choices[computerChoice].name}'i yener!`;
+      } else if (result === 'lose') {
+        resultText.textContent = '😔 Kaybettin!';
+        resultExplanation.textContent = `${choices[computerChoice].name}, ${choices[playerChoice].name}'i yener!`;
+      } else {
+        resultText.textContent = '🤝 Berabere!';
+        resultExplanation.textContent = 'İkiniz de aynı seçimi yaptınız!';
+      }
+
+      resultModal.classList.add('show');
+    }
+
+    playAgainBtn.addEventListener('click', () => {
+      resultModal.classList.remove('show');
+    });
+
+    resetBtn.addEventListener('click', () => {
+      playerScore = 0;
+      computerScore = 0;
+      playerScoreEl.textContent = '0';
+      computerScoreEl.textContent = '0';
+      resultModal.classList.remove('show');
+    });
+
+    resultModal.addEventListener('click', (e) => {
+      if (e.target.id === 'result-modal') {
+        resultModal.classList.remove('show');
+      }
+    });
+
+    async function onConfigChange(config) {
+      const title = config.game_title || defaultConfig.game_title;
+      const instruction = config.instruction_text || defaultConfig.instruction_text;
+      const playerLabel = config.player_label || defaultConfig.player_label;
+      const computerLabel = config.computer_label || defaultConfig.computer_label;
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const secondaryColor = config.secondary_color || defaultConfig.secondary_color;
+
+      document.getElementById('game-title').textContent = title;
+      document.getElementById('instruction-text').textContent = instruction;
+      document.getElementById('player-label').textContent = playerLabel;
+      document.getElementById('computer-label').textContent = computerLabel;
+      document.getElementById('player-battle-label').textContent = playerLabel;
+      document.getElementById('computer-battle-label').textContent = computerLabel;
+
+      document.querySelector('h1').style.color = primaryColor;
+      
+      document.querySelector('.play-again-btn').style.background = primaryColor;
+      document.querySelector('.vs-text').style.color = primaryColor;
+      
+      const scoreValues = document.querySelectorAll('.score-value');
+      scoreValues.forEach(el => el.style.color = primaryColor);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            },
+            {
+              get: () => config.secondary_color || defaultConfig.secondary_color,
+              set: (value) => {
+                config.secondary_color = value;
+                window.elementSdk.setConfig({ secondary_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["game_title", config.game_title || defaultConfig.game_title],
+          ["instruction_text", config.instruction_text || defaultConfig.instruction_text],
+          ["player_label", config.player_label || defaultConfig.player_label],
+          ["computer_label", config.computer_label || defaultConfig.computer_label]
+        ])
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a62064795246852',t:'MTc2NDQxODQ2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yılan Oyunu 🐍</title>
+<link rel="stylesheet" href="snake.css">
+</head>
+<body>
+  <h1>Yılan Oyunu 🐍 (BETA))</h1>
+
+  <div class="ui-container">
+    <div class="left-panel">
+      <button id="restartBtn">🔁 Yeniden Başlat</button>
+      <div id="score">Skor: 0</div>
+      <div id="controls">
+        <p>Kontroller:</p>
+        <p>Yön Tuşları / W A S D</p>
+        <p>Mobil: Kaydırma</p>
+      </div>
+    </div>
+
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <div class="right-panel">
+      <h3>Mod Seç</h3>
+      <button class="theme-btn" data-theme="classic">Klasik</button>
+      <button class="theme-btn" data-theme="snow">Kar ❄️</button>
+      <button class="theme-btn" data-theme="desert">Çöl 🏜️</button>
+      <button class="theme-btn" data-theme="crazy">Çılgın 🎨</button>
+      <button class="theme-btn" data-theme="slime">Sümüklü 🟩</button>
+      <button class="theme-btn" data-theme="cage">Yılan Kafesi 🐍</button>
+    </div>
+  </div>
+
+  <!-- Popup onay -->
+  <div id="popup" class="popup">
+    <div class="popup-content">
+      <p>Modu değiştirmek istiyor musunuz?</p>
+      <p class="warning">Uyarı: Oyun 0’dan başlayacak</p>
+      <button id="popupYes">Evet</button>
+      <button id="popupNo">Hayır</button>
+    </div>
+  </div>
+
+<script src="snake.js"></script>
+</body>
+</html>

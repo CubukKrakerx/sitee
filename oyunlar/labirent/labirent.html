@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labirent Oyunu</title>
+<link rel="stylesheet" href="labirent.css">
+</head>
+<body>
+  <h1>Labirent Oyunu 🌀</h1>
+  <div class="ui-container">
+    <div class="left-panel">
+      <button id="restartBtn">🔁 Yeniden Başlat</button>
+      <div id="controls">
+        <p>Kontroller:</p>
+        <p>Yön Tuşları / W A S D</p>
+        <p>Mobil: Kaydırma</p>
+      </div>
+    </div>
+    <canvas id="mazeCanvas" width="400" height="400"></canvas>
+    <div class="right-panel">
+      <h3>Tema Seç</h3>
+      <button class="theme-btn" data-theme="classic">Klasik</button>
+      <button class="theme-btn" data-theme="night">Gece</button>
+    </div>
+  </div>
+  <div id="level">Seviye: 1</div>
+<script src="labirent.js"></script>
+</body>
+</html>

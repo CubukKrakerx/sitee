@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tower Defense</title>
+<style>
+  :root{--bg:#071530;--fg:#e6f0ff;--muted:#9bb0d9}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#041028,#071530);color:var(--fg);font-family:Inter,ui-sans-serif,system-ui,monospace}
+  .wrap{max-width:1600px;margin:0 auto 2px;padding:8px;display:grid;grid-template-columns:1fr 300px;gap:12px}
+  header{grid-column:1/-1;text-align:center}
+  canvas{width:100%;height:520px;border-radius:8px;background:#021226;display:block}
+  .panel{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:8px}
+  .hud{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .stat{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:6px;font-size:14px}
+  .shop{display:grid;gap:8px;margin-top:8px}
+  .btn{background:linear-gradient(180deg,#0b2a44,#08304a);border:1px solid rgba(255,255,255,0.06);padding:8px;border-radius:8px;color:var(--fg);cursor:pointer}
+  .small{font-size:13px;color:var(--muted)}
+  .controls { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .info { margin-top:8px; font-size:13px; color:var(--muted); }
+  /* Modal Styles */
+  .modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.7); }
+  .modal-content { background-color:#071530; margin:15% auto; padding:20px; border:1px solid rgba(255,255,255,0.1); border-radius:8px; width:300px; color:var(--fg); position:relative; }
+  .modal-content h3 { margin-top:0; }
+  .modal-content p { margin:10px 0; }
+  .modal-buttons { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+  .modal-btn { padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-size:14px; }
+  .modal-btn.confirm { background:#57f287; color:#000; }
+  .modal-btn.cancel { background:#ff6b6b; color:#fff; }
+  .close { position:absolute; top:10px; right:10px; color:#fff; font-size:20px; cursor:pointer; }
+  .upgrade-info { margin:15px 0; }
+  .upgrade-info div { margin:5px 0; }
+  .upgrade-info .improvement { color:#57f287; }
+  .warning { background:#ff6b6b; color:#fff; padding:8px; border-radius:6px; margin-top:8px; display:none; font-size:14px; text-align:center; }
+  .warning-modal-content { text-align: center; font-size: 32px; color: #ff6b6b; font-weight: bold; }
+  .cost-highlight { font-size: 18px; color: #ffd97a; font-weight: bold; }
+  .warning-modal { display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.9); justify-content:center; align-items:center; }
+  .warning-modal-content { text-align: center; font-size: 48px; color: #ff6b6b; font-weight: bold; }
+  @media(max-width:900px){.wrap{grid-template-columns:1fr;}.panel{order:2}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <canvas id="game" width="800" height="520" aria-label="Tower Defense"></canvas>
+      <div class="hud" style="margin-top:8px">
+        <div class="stat">Para: <span id="gold">120</span></div>
+        <div class="stat">Can: <span id="hp">20</span></div>
+        <div class="stat">Dalga: <span id="wave">1</span></div>
+        <div class="stat">Kalan: <span id="remaining">0</span></div>
+      </div>
+    </div>
+
+    <aside class="panel">
+      <div><strong>Mağaza</strong></div>
+      <div class="shop" id="shop">
+        <button class="btn" data-type="basic">Kule: Hızlı (50g)</button>
+        <button class="btn" data-type="sniper">Kule: Güçlü (80g)</button>
+        <button class="btn" data-type="aoe">Kule: Alan (100g)</button>
+        <button class="btn" data-type="slow">Kule: Yavaşlatıcı (70g)</button>
+      </div>
+
+      <div class="controls">
+        <div>Seçili: <span id="selected">Yok</span></div>
+        <button class="btn" id="upgrade">Yönet</button>
+        <button class="btn" id="startWave">Dalga Başlat</button>
+      </div>
+
+      <div class="info">
+        <div>Seçili kuleyi yükselt: +hasar, +menzil, +hız. Maks seviye 3.</div>
+        <div style="margin-top:6px">Kule seçmek için üzerine tıkla; mağazadan seçip boş yuvalara yerleştir.</div>
+        <div style="margin-top:6px">Beta aşamasındadır istek ve önerileriniz için bizimle iletişime geçiniz</div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Modals -->
+  <div id="towerModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('towerModal')">&times;</span>
+      <h3>Kule Yönetimi</h3>
+      <div class="upgrade-info" id="upgradeInfo"></div>
+      <div class="modal-buttons">
+        <button class="modal-btn confirm" onclick="confirmUpgrade()">Yükselt</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="warningModal" class="warning-modal">
+    <div class="warning-modal-content" id="warningModalContent"></div>
+  </div>
+
+<script>
+/* Gelişmiş TD prototip
+   - Yeni düşman türleri: shielded, regen
+   - Kule yükseltmeleri (3 seviye)
+   - Denge: değerler tabloda
+*/
+
+// Canvas
+const canvas = document.getElementById('game'), ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// HUD
+const goldEl = document.getElementById('gold'), hpEl = document.getElementById('hp'), waveEl = document.getElementById('wave'), remEl = document.getElementById('remaining');
+let GOLD = 120, HP = 20, WAVE = 1;
+
+// Path and slots
+const path = [
+  {x:-40,y:260},{x:140,y:260},{x:140,y:100},{x:360,y:100},{x:360,y:360},{x:620,y:360},{x:800,y:360}
+];
+const slots = [
+  {x:120,y:160},{x:260,y:160},{x:420,y:160},{x:560,y:160},
+  {x:120,y:320},{x:260,y:320},{x:420,y:320},{x:560,y:320}
+];
+
+// Game lists
+let enemies = [], towers = [], bullets = [], particles = [], dmgTexts = [];
+let waveActive = false, remainingToSpawn = 0, spawnTimer = 0;
+let waveQueue = [];
+
+// Enemy types (eklenen: shielded, regen)
+const ENEMIES = {
+  normal: {hp:10, speed:40, reward:8, color:'#57f287'},
+  fast:   {hp:6,  speed:80, reward:6, color:'#ffd166'},
+  heavy:  {hp:30, speed:28, reward:18, color:'#9b5dfc'},
+  elite:  {hp:60, speed:36, reward:40, color:'#ff6b6b'},
+  shielded:{hp:20, speed:34, reward:16, color:'#7fd3ff', shield:0.30}, // %30 damage reduction
+  regen:  {hp:18, speed:34, reward:14, color:'#b6ff9e', regen:1} // +1 HP per second
+};
+
+// Tower definitions and upgrade multipliers - Denge ayarları
+const TOWERS = {
+  basic: {cost:50, range:95, rate:0.32, dmg:8, color:'#9ad3ff'},
+  sniper:{cost:80, range:240, rate:1.0, dmg:35, color:'#ffd97a'},
+  aoe:   {cost:100, range:75, rate:0.85, dmg:12, color:'#c6ffb3', aoe:true},
+  slow:  {cost:70, range:110, rate:0.6, dmg:4, color:'#a8e6cf', slow:0.5} // %50 slow
+};
+const UPGRADE_MULT = {
+  costFactor: [1.0, 1.6, 2.5], // level1 cost*1, level2 cost*1.6, level3 cost*2.5 (total)
+  dmgFactor: [1.0, 1.5, 2.0],
+  rangeAdd: [0, 16, 30],
+  rateFactor: [1.0, 0.9, 0.75] // lower is faster
+};
+
+// Selected
+let selectedType = null, selectedTower = null;
+
+// Warning function
+function showWarning(message) {
+  const warningModal = document.getElementById('warningModal');
+  const warningContent = document.getElementById('warningModalContent');
+  warningContent.textContent = message;
+  warningModal.style.display = 'flex';
+  setTimeout(() => {
+    warningModal.style.display = 'none';
+  }, 3000); // hide after 3 seconds
+}
+
+// Update controls visibility - removed sell button references
+function updateControls(){
+  // No longer needed as buttons are always visible
+}
+
+// Utility
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+function updateHUD(){ goldEl.textContent = GOLD; hpEl.textContent = HP; remEl.textContent = remainingToSpawn + enemies.length; waveEl.textContent = WAVE; }
+
+// Wave composition (daha çeşitli)
+function makeWave(level){
+  const total = Math.min(40, 8 + level*3);
+  const arr = [];
+  for(let i=0;i<total;i++){
+    const r = Math.random();
+    if(r < Math.min(0.12, 0.02*level)) arr.push('elite');
+    else if(r < 0.22 + 0.02*level) arr.push('heavy');
+    else if(r < 0.36 + 0.02*level) arr.push('shielded');
+    else if(r < 0.56) arr.push('fast');
+    else if(r < 0.68) arr.push('regen');
+    else arr.push('normal');
+  }
+  return arr;
+}
+
+// Spawn enemy with properties
+function spawnEnemy(type){
+  const def = ENEMIES[type];
+  enemies.push({
+    type, hp: def.hp, maxHp: def.hp, speed: def.speed, reward: def.reward, color: def.color,
+    shield: def.shield || 0, regen: def.regen || 0,
+    pathIndex:0, x: path[0].x, y: path[0].y, alpha:0, spawnT:0, regenTimer:0,
+    slowFactor:1, slowTimer:0
+  });
+}
+
+// Tower placement & upgrade
+function placeTower(type, slot){
+  const def = TOWERS[type];
+  if(GOLD < def.cost) return false;
+  GOLD -= def.cost; updateHUD();
+  towers.push({type, x: slot.x, y: slot.y, level:1, def, cooldown:0, pulse:0});
+  return true;
+}
+function upgradeTower(t){
+  if(!t) return;
+  if(t.level >= 3) return showWarning('Maks seviye');
+  const baseCost = t.def.cost;
+  const nextLevel = t.level + 1;
+  const cost = Math.floor(baseCost * (UPGRADE_MULT.costFactor[nextLevel-1]));
+  if(GOLD < cost) return showWarning('Yeterli para yok');
+  GOLD -= cost; t.level = nextLevel;
+  // apply stat changes implicitly in firing logic via multipliers
+  updateHUD();
+}
+function sellTower(t){
+  if(!t) return;
+  const baseCost = t.def.cost;
+  const refund = Math.floor(baseCost * (0.5 + 0.1*(t.level-1)));
+  GOLD += refund;
+  towers = towers.filter(x=>x!==t);
+  selectedTower = null; document.getElementById('selected').textContent = 'Yok';
+  updateHUD();
+}
+
+// Bullet spawn
+function fireBullet(tx,ty, target, dmg, aoe=false, slow=0){
+  bullets.push({x:tx,y:ty,tx:target.x,ty:target.y,target,spd:420,dmg,aoe,slow,trail:[]});
+  for(let i=0;i<6;i++) particles.push({x:tx,y:ty,vx:(Math.random()-0.5)*120,vy:(Math.random()-0.5)*120,life:0.12,color:'#fff'});
+}
+
+// Explosion
+function spawnExplosion(x,y,color='#ffb86b'){
+  for(let i=0;i<18;i++){
+    const ang = Math.random()*Math.PI*2;
+    const spd = 40 + Math.random()*180;
+    particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:0.6,color});
+  }
+  particles.push({x,y,vx:0,vy:0,life:0.25,color:'rgba(255,200,0,0.6)',rad:18});
+}
+function spawnDmgText(x,y,txt,color='#fff'){ dmgTexts.push({x,y,txt,alpha:1,vy:-20,color,time:0}); }
+
+// Main update loop
+let last = performance.now();
+function update(){
+  const now = performance.now();
+  const dt = Math.min(0.05, (now-last)/1000);
+  last = now;
+
+  // spawn logic
+  if(waveActive && remainingToSpawn>0){
+    spawnTimer -= dt;
+    if(spawnTimer <= 0){
+      spawnTimer = Math.max(0.18, 0.45 - Math.min(0.25, WAVE*0.01)); // spawn faster as waves increase
+      const type = waveQueue.shift();
+      spawnEnemy(type);
+      remainingToSpawn--;
+    }
+  }
+
+  // enemies move & regen
+  for(let i=enemies.length-1;i>=0;i--){
+    const e = enemies[i];
+    if(e.alpha < 1){ e.spawnT += dt; e.alpha = Math.min(1, e.spawnT / 0.35); }
+    if(e.regen){
+      e.regenTimer += dt;
+      if(e.regenTimer >= 1){ e.hp = Math.min(e.maxHp, e.hp + e.regen); e.regenTimer = 0; }
+    }
+    if(e.slowTimer > 0){
+      e.slowTimer -= dt;
+      if(e.slowTimer <= 0) e.slowFactor = 1;
+    }
+    const target = path[Math.min(e.pathIndex+1, path.length-1)];
+    const dx = target.x - e.x, dy = target.y - e.y;
+    const d = Math.hypot(dx,dy);
+    if(d < 1){
+      if(e.pathIndex < path.length-2) e.pathIndex++;
+      else { HP -= 1; enemies.splice(i,1); updateHUD(); continue; }
+    } else {
+      const vx = (dx/d) * e.speed * e.slowFactor * dt;
+      const vy = (dy/d) * e.speed * e.slowFactor * dt;
+      e.x += vx; e.y += vy;
+    }
+  }
+
+  // towers target & fire (apply upgrade multipliers)
+  for(const t of towers){
+    t.cooldown -= dt;
+    t.pulse += dt;
+    const lvl = t.level;
+    const dmg = Math.floor(t.def.dmg * UPGRADE_MULT.dmgFactor[lvl-1]);
+    const range = t.def.range + UPGRADE_MULT.rangeAdd[lvl-1];
+    const rate = t.def.rate * UPGRADE_MULT.rateFactor[lvl-1];
+
+    if(t.cooldown <= 0){
+      // find nearest target in range
+      let target = null, bestD = 9999;
+      for(const e of enemies){
+        const d = Math.hypot(e.x - t.x, e.y - t.y);
+        if(d <= range && d < bestD){ bestD = d; target = e; }
+      }
+      if(target){
+        t.cooldown = rate;
+        if(t.def.aoe){
+          fireBullet(t.x,t.y,target,dmg,true, t.def.slow || 0);
+        } else {
+          fireBullet(t.x,t.y,target,dmg,false, t.def.slow || 0);
+        }
+      }
+    }
+  }
+
+  // bullets move & hit
+  for(let i=bullets.length-1;i>=0;i--){
+    const b = bullets[i];
+    b.trail.push({x:b.x,y:b.y,life:0.18});
+    if(b.trail.length>8) b.trail.shift();
+    const dx = b.tx - b.x, dy = b.ty - b.y;
+    const d = Math.hypot(dx,dy);
+    const step = b.spd * dt;
+    if(d <= step || !enemies.includes(b.target)){
+      // impact
+      if(b.aoe){
+        for(const e of enemies){
+          if(Math.hypot(e.x - b.x, e.y - b.y) <= 40){
+            const dmg = Math.max(1, b.dmg - Math.floor(e.shield ? b.dmg * e.shield : 0));
+            e.hp -= dmg;
+            spawnDmgText(e.x, e.y - 10, '-' + dmg, '#ffdd57');
+            if(b.slow > 0){
+              e.slowFactor = Math.min(e.slowFactor, 1 - b.slow);
+              e.slowTimer = Math.max(e.slowTimer, 2); // 2 seconds slow
+            }
+          }
+        }
+      } else {
+        if(enemies.includes(b.target)){
+          const e = b.target;
+          const dmg = Math.max(1, b.dmg - Math.floor(e.shield ? b.dmg * e.shield : 0));
+          e.hp -= dmg;
+          spawnDmgText(e.x, e.y - 10, '-' + dmg, '#fff');
+          if(b.slow > 0){
+            e.slowFactor = Math.min(e.slowFactor, 1 - b.slow);
+            e.slowTimer = Math.max(e.slowTimer, 2); // 2 seconds slow
+          }
+        }
+      }
+      bullets.splice(i,1);
+      spawnExplosion(b.x,b.y,'#ffd97a');
+    } else {
+      b.x += (dx/d)*step; b.y += (dy/d)*step;
+    }
+  }
+
+  // particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p = particles[i];
+    p.life -= dt;
+    if(p.life <= 0) particles.splice(i,1);
+    else { p.x += (p.vx||0) * dt; p.y += (p.vy||0) * dt; p.vy += 80 * dt; if(p.rad) p.rad *= 0.96; }
+  }
+
+  // remove dead enemies
+  for(let i=enemies.length-1;i>=0;i--){
+    const e = enemies[i];
+    if(e.hp <= 0){
+      GOLD += e.reward; updateHUD();
+      spawnExplosion(e.x,e.y,e.color);
+      enemies.splice(i,1);
+    }
+  }
+
+  // damage texts
+  for(let i=dmgTexts.length-1;i>=0;i--){
+    const t = dmgTexts[i];
+    t.time += dt; t.y += t.vy * dt; t.alpha = Math.max(0, 1 - t.time/0.9);
+    if(t.alpha <= 0) dmgTexts.splice(i,1);
+  }
+
+  // check wave end
+  if(waveActive && remainingToSpawn===0 && enemies.length===0){
+    waveActive = false;
+    WAVE++;
+    updateHUD();
+  }
+
+  // lose
+  if(HP <= 0){ showWarning('Kaybettin! Yeniden başlatılıyor'); resetGame(); }
+
+  render();
+  requestAnimationFrame(update);
+}
+
+// Render
+function render(){
+  ctx.clearRect(0,0,W,H);
+
+  // path glow
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,120,200,0.03)'; ctx.lineWidth = 40; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(path[0].x, path[0].y);
+  for(let i=1;i<path.length;i++) ctx.lineTo(path[i].x, path[i].y);
+  ctx.stroke(); ctx.restore();
+
+  // path
+  ctx.strokeStyle = '#123'; ctx.lineWidth = 28; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(path[0].x, path[0].y);
+  for(let i=1;i<path.length;i++) ctx.lineTo(path[i].x, path[i].y);
+  ctx.stroke();
+
+  // slots
+  for(const s of slots){
+    ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(s.x-18,s.y-18,36,36);
+  }
+
+  // towers
+  for(const t of towers){
+    const lvl = t.level;
+    const range = t.def.range + UPGRADE_MULT.rangeAdd[lvl-1];
+    const pulse = 1 + 0.06 * Math.sin(t.pulse * 6);
+    ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.beginPath(); ctx.arc(t.x,t.y,range*pulse,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle = t.def.color; ctx.beginPath(); ctx.arc(t.x,t.y,14,0,Math.PI*2); ctx.fill();
+    if(t.cooldown < 0.12){ ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(t.x + (Math.random()-0.5)*6, t.y + (Math.random()-0.5)*6, 6, 0, Math.PI*2); ctx.fill(); }
+    // level indicator
+    ctx.fillStyle = '#000'; ctx.fillRect(t.x-10,t.y+16,20,6);
+    ctx.fillStyle = '#ffd97a'; ctx.fillRect(t.x-10,t.y+16, (20*(t.level/3)),6);
+  }
+
+  // enemies
+  for(const e of enemies){
+    ctx.globalAlpha = e.alpha;
+    ctx.fillStyle = e.color; ctx.beginPath(); ctx.arc(e.x,e.y,12,0,Math.PI*2); ctx.fill();
+    // shield visual
+    if(e.shield){
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(e.x,e.y,16,0,Math.PI*2); ctx.stroke();
+    }
+    // hp bar
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = '#222'; ctx.fillRect(e.x-14,e.y-20,28,5);
+    ctx.fillStyle = '#0f0'; ctx.fillRect(e.x-14,e.y-20,28*(e.hp/e.maxHp),5);
+    ctx.globalAlpha = 1;
+  }
+
+  // bullets & trails
+  for(const b of bullets){
+    for(let i=0;i<b.trail.length;i++){
+      const p = b.trail[i]; const a = (i+1)/b.trail.length;
+      ctx.fillStyle = `rgba(255,255,255,${0.12*a})`; ctx.beginPath(); ctx.arc(p.x,p.y,2 + a*2,0,Math.PI*2); ctx.fill();
+    }
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x,b.y,3,0,Math.PI*2); ctx.fill();
+  }
+
+  // particlespa
+  for(const p of particles){
+    ctx.fillStyle = p.color;
+    if(p.rad) ctx.beginPath(), ctx.arc(p.x,p.y,p.rad,0,Math.PI*2), ctx.fill();
+    else ctx.fillRect(p.x-1,p.y-1,2,2);
+  }
+
+  // damage texts
+  ctx.textAlign = 'center'; ctx.font = 'bold 14px monospace';
+  for(const t of dmgTexts){
+    ctx.fillStyle = t.color; ctx.globalAlpha = t.alpha; ctx.fillText(t.txt, t.x, t.y); ctx.globalAlpha = 1;
+  }
+}
+
+// UI interactions
+document.getElementById('shop').addEventListener('click', (ev)=>{
+  const btn = ev.target.closest('button'); if(!btn) return;
+  selectedType = btn.dataset.type; selectedTower = null; document.getElementById('selected').textContent = selectedType;
+});
+document.getElementById('startWave').addEventListener('click', ()=>{
+  if(waveActive) return;
+  waveQueue = makeWave(WAVE);
+  remainingToSpawn = waveQueue.length; spawnTimer = 0; waveActive = true; updateHUD();
+});
+canvas.addEventListener('pointerdown', (ev)=>{
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+  const x = (ev.clientX - rect.left) * scaleX, y = (ev.clientY - rect.top) * scaleY;
+  // select tower
+  for(const t of towers){ if(Math.hypot(t.x-x,t.y-y) < 18){ selectedTower = t; selectedType = null; document.getElementById('selected').textContent = 'Kule seçili (lvl '+t.level+')'; updateControls(); return; } }
+  // place tower if type selected
+  if(selectedType){
+    let nearest = null, nd = 9999;
+    for(const s of slots){ const d = Math.hypot(s.x-x,s.y-y); if(d < nd){ nd = d; nearest = s; } }
+    if(nearest && nd < 28){
+      const occupied = towers.some(t=>Math.hypot(t.x-nearest.x,t.y-nearest.y) < 10);
+      if(!occupied){
+        if(placeTower(selectedType, nearest)){ selectedType = null; document.getElementById('selected').textContent = 'Yok'; updateControls(); }
+        else showWarning('Yeterli para yok');
+      } else showWarning('Bu yuva dolu');
+    }
+  } else { selectedTower = null; document.getElementById('selected').textContent = 'Yok'; updateControls(); }
+});
+// Modal functions
+function openModal(modalId){
+  document.getElementById(modalId).style.display = 'block';
+}
+function closeModal(modalId){
+  document.getElementById(modalId).style.display = 'none';
+}
+function confirmUpgrade(){
+  if(selectedTower){
+    upgradeTower(selectedTower);
+    closeModal('towerModal');
+  }
+}
+
+
+document.getElementById('upgrade').addEventListener('click', ()=>{
+  if(selectedTower){
+    const infoEl = document.getElementById('upgradeInfo');
+    const lvl = selectedTower.level;
+    const nextLvl = lvl + 1;
+    if(nextLvl > 3){
+      infoEl.innerHTML = '<div>Maks seviye ulaştınız!</div>';
+    } else {
+      const baseCost = selectedTower.def.cost;
+      const cost = Math.floor(baseCost * UPGRADE_MULT.costFactor[nextLvl-1]);
+      const dmgNow = Math.floor(selectedTower.def.dmg * UPGRADE_MULT.dmgFactor[lvl-1]);
+      const dmgNext = Math.floor(selectedTower.def.dmg * UPGRADE_MULT.dmgFactor[nextLvl-1]);
+      const rangeNow = selectedTower.def.range + UPGRADE_MULT.rangeAdd[lvl-1];
+      const rangeNext = selectedTower.def.range + UPGRADE_MULT.rangeAdd[nextLvl-1];
+      const rateNow = (selectedTower.def.rate * UPGRADE_MULT.rateFactor[lvl-1]).toFixed(2);
+      const rateNext = (selectedTower.def.rate * UPGRADE_MULT.rateFactor[nextLvl-1]).toFixed(2);
+      infoEl.innerHTML = `
+        <div>Seviye ${lvl} → ${nextLvl}</div>
+        <div>Maliyet: <span class="cost-highlight">${cost}</span> altın</div>
+        <div>Hasar: ${dmgNow} → <span class="improvement">${dmgNext}</span></div>
+        <div>Menzil: ${rangeNow} → <span class="improvement">${rangeNext}</span></div>
+        <div>Hız: ${rateNow}s → <span class="improvement">${rateNext}s</span></div>
+      `;
+    }
+    openModal('towerModal');
+  } else {
+    showWarning('Kule seç!');
+  }
+});
+
+
+// reset
+function resetGame(){ GOLD = 120; HP = 20; WAVE = 1; enemies=[]; towers=[]; bullets=[]; particles=[]; dmgTexts=[]; waveActive=false; remainingToSpawn=0; updateHUD(); }
+updateHUD(); requestAnimationFrame(update);
+
+</script>
+</body>
+</html>

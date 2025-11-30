@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hızlı Karar</title>
+  <link rel="stylesheet" href="hizliKarar.css" />
+</head>
+<body>
+  <div class="game-container">
+    <h1>🧠 Hızlı Karar</h1>
+    <div id="command">Hazırsan başlıyoruz...</div>
+
+    <div id="timer-bar">
+      <div id="timer-fill"></div>
+    </div>
+    <div id="time-text">Süre: 0.0s</div>
+
+    <div class="buttons">
+      <button class="color-btn red" data-color="red"></button>
+      <button class="color-btn green" data-color="green"></button>
+      <button class="color-btn blue" data-color="blue"></button>
+      <button class="color-btn yellow" data-color="yellow"></button>
+    </div>
+
+    <div id="score">Skor: 0</div>
+
+    <div id="restart" class="hidden">
+      <p>💀 Kaybettin!</p>
+      <button id="restartBtn">Yeniden Başla</button>
+      <p id="bestScore">Rekor: 0</p>
+    </div>
+  </div>
+
+  <script src="hizliKarar.js"></script>
+</body>
+</html>

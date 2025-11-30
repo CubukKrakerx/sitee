@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="tr">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelime Tahmin Oyunu</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      height: 100%;
+      width: 100%;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .game-wrapper {
+      width: 100%;
+      min-height: 100%;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ff8c42 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+    }
+
+    .game-container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ff6b6b;
+      margin: 0 0 8px 0;
+      font-size: 36px;
+      font-weight: bold;
+    }
+
+    .instructions {
+      text-align: center;
+      color: #666;
+      margin: 0 0 32px 0;
+      font-size: 16px;
+    }
+
+    .game-board {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .guess-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .letter-box {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #d3d6da;
+      border-radius: 4px;
+      font-size: 32px;
+      font-weight: bold;
+      text-transform: uppercase;
+      background: white;
+      transition: all 0.3s ease;
+    }
+
+    .letter-box.filled {
+      border-color: #878a8c;
+      animation: pop 0.1s ease-in-out;
+    }
+
+    .letter-box.correct {
+      background: #6aaa64;
+      border-color: #6aaa64;
+      color: white;
+    }
+
+    .letter-box.present {
+      background: #c9b458;
+      border-color: #c9b458;
+      color: white;
+    }
+
+    .letter-box.absent {
+      background: #787c7e;
+      border-color: #787c7e;
+      color: white;
+    }
+
+    .letter-box.current {
+      border-color: #ff6b6b;
+      border-width: 3px;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .input-section {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    #guess-input {
+      flex: 1;
+      padding: 16px;
+      border: 2px solid #d3d6da;
+      border-radius: 8px;
+      font-size: 18px;
+      text-transform: uppercase;
+      font-weight: bold;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    #guess-input:focus {
+      border-color: #ff6b6b;
+    }
+
+    .btn-submit {
+      padding: 16px 32px;
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-submit:hover {
+      background: #ff5252;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    }
+
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+
+    .btn-submit:disabled {
+      background: #d3d6da;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .message {
+      text-align: center;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-weight: bold;
+      display: none;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .message.info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .btn-new-game {
+      width: 100%;
+      padding: 16px;
+      background: #ff8c42;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+    }
+
+    .btn-new-game.show {
+      display: block;
+    }
+
+    .btn-new-game:hover {
+      background: #ff7a29;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+    }
+
+    .keyboard {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 6px;
+      margin-top: 24px;
+    }
+
+    .key {
+      padding: 14px 0;
+      background: #d3d6da;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .key:hover {
+      background: #bbbec2;
+    }
+
+    .key.correct {
+      background: #6aaa64;
+      color: white;
+    }
+
+    .key.present {
+      background: #c9b458;
+      color: white;
+    }
+
+    .key.absent {
+      background: #787c7e;
+      color: white;
+    }
+
+    .info-btn {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+    }
+
+    .info-btn:hover {
+      background: #ff5252;
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90%;
+      overflow-y: auto;
+      position: relative;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 32px;
+      color: #666;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .modal-content h2 {
+      color: #ff6b6b;
+      margin: 0 0 8px 0;
+      font-size: 28px;
+      text-align: center;
+    }
+
+    .modal-description {
+      text-align: center;
+      color: #666;
+      margin: 0 0 24px 0;
+      font-size: 16px;
+    }
+
+    .info-section {
+      margin: 24px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+    }
+
+    .info-section h3 {
+      color: #333;
+      margin: 0 0 16px 0;
+      font-size: 18px;
+    }
+
+    .color-example {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .color-example:last-child {
+      margin-bottom: 0;
+    }
+
+    .example-box {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .example-text {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .example-text strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 16px;
+    }
+
+    .example-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 16px 0;
+    }
+
+    .example-explanation {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 16px;
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 24px;
+    }
+
+    .modal-btn:hover {
+      background: #ff5252;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    }
+
+    .game-over-content {
+      text-align: center;
+    }
+
+    .game-over-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .game-over-text {
+      font-size: 18px;
+      color: #666;
+      margin: 16px 0 8px 0;
+    }
+
+    .correct-word {
+      font-size: 36px;
+      font-weight: bold;
+      color: #ff6b6b;
+      letter-spacing: 8px;
+      margin: 16px 0;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 600px) {
+      .game-container {
+        padding: 24px 16px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      .letter-box {
+        font-size: 24px;
+      }
+
+      #guess-input {
+        font-size: 16px;
+        padding: 12px;
+      }
+
+      .btn-submit {
+        padding: 12px 24px;
+        font-size: 16px;
+      }
+
+      .modal-content {
+        padding: 24px;
+      }
+
+      .modal-content h2 {
+        font-size: 24px;
+      }
+
+      .info-btn {
+        width: 36px;
+        height: 36px;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <main class="game-wrapper">
+   <div class="game-container">
+    <div style="position: relative;">
+     <h1 id="game-title">Kelime Tahmin Oyunu</h1><button class="info-btn" id="info-btn" title="Nasıl Oynanır?">
+      <svg width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle> <line x1="12" y1="16" x2="12" y2="12"></line> <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg></button>
+    </div>
+    <p class="instructions" id="instruction-text">5 harfli kelimeyi 6 denemede tahmin et</p>
+    <div class="message" id="message"></div>
+    <div class="game-board" id="game-board"></div>
+    <div class="input-section"><input type="text" id="guess-input" maxlength="5" placeholder="Tahmin..." autocomplete="off"> <button class="btn-submit" id="submit-btn">Gönder</button>
+    </div>
+    <div class="keyboard" id="keyboard"></div><button class="btn-new-game" id="new-game-btn">Yeni Oyun</button>
+   </div>
+   <div class="modal-overlay" id="info-modal">
+    <div class="modal-content"><button class="modal-close" id="close-info">×</button>
+     <h2>Nasıl Oynanır? 🎮</h2>
+     <p class="modal-description">5 harfli kelimeyi 6 denemede tahmin etmeye çalış!</p>
+     <div class="info-section">
+      <h3>Renkler Ne Anlama Geliyor?</h3>
+      <div class="color-example">
+       <div class="example-box correct">
+        K
+       </div>
+       <div class="example-text"><strong>Yeşil:</strong> Harf doğru ve doğru yerde
+       </div>
+      </div>
+      <div class="color-example">
+       <div class="example-box present">
+        E
+       </div>
+       <div class="example-text"><strong>Sarı:</strong> Harf kelimede var ama yanlış yerde
+       </div>
+      </div>
+      <div class="color-example">
+       <div class="example-box absent">
+        L
+       </div>
+       <div class="example-text"><strong>Gri:</strong> Harf kelimede yok
+       </div>
+      </div>
+     </div>
+     <div class="info-section">
+      <h3>Örnek:</h3>
+      <p>Aradığımız kelime <strong>BAHÇE</strong> olsun</p>
+      <div class="example-row">
+       <div class="example-box absent">
+        K
+       </div>
+       <div class="example-box present">
+        A
+       </div>
+       <div class="example-box absent">
+        L
+       </div>
+       <div class="example-box absent">
+        E
+       </div>
+       <div class="example-box absent">
+        M
+       </div>
+      </div>
+      <p class="example-explanation">A harfi kelimede var ama 2. konumda değil</p>
+     </div><button class="modal-btn" id="start-playing">Anladım, Oynayalım!</button>
+    </div>
+   </div>
+   <div class="modal-overlay" id="game-over-modal">
+    <div class="modal-content game-over-content">
+     <div class="game-over-icon">
+      😔
+     </div>
+     <h2>Kaybettin!</h2>
+     <p class="game-over-text">Doğru kelime:</p>
+     <div class="correct-word" id="correct-word-display"></div><button class="modal-btn" id="play-again-btn">🔄 Yeniden Oyna</button>
+    </div>
+   </div>
+  </main>
+  <script>
+    const defaultConfig = {
+      game_title: "Kelime Tahmin Oyunu",
+      instruction_text: "5 harfli kelimeyi 6 denemede tahmin et",
+      primary_color: "#ff6b6b",
+      secondary_color: "#ff8c42",
+      background_color: "#ffffff",
+      correct_color: "#6aaa64",
+      present_color: "#c9b458"
+    };
+
+    const WORD_LIST = [
+      "bahçe", "çocuk", "deniz", "elbise", "fırın", "gitar", "halı", "insan", "japon",
+      "kablo", "lamba", "metal", "neden", "orman", "pasta", "salon", "tablo", "uzman",
+      "vakit", "yazım", "zaman", "araba", "beyaz", "cadde", "dünya", "evren", "fidan",
+      "güneş", "hasta", "işaret", "kalem", "limon", "masal", "nöbet", "okuma", "pazar",
+      "radyo", "saat", "tavan", "uygun", "video", "yarın", "ziyaret", "abide", "bisiklet"
+    ];
+
+    let targetWord = "";
+    let currentGuess = "";
+    let currentRow = 0;
+    let gameOver = false;
+    let letterStates = {};
+
+    const turkishKeys = [
+      ['a', 'b', 'c', 'ç', 'd', 'e', 'f', 'g', 'ğ', 'h'],
+      ['ı', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'ö', 'p'],
+      ['r', 's', 'ş', 't', 'u', 'ü', 'v', 'y', 'z', 'q']
+    ];
+
+    function normalizeText(text) {
+      return text.toLowerCase()
+        .replace(/ı/g, 'i')
+        .replace(/ğ/g, 'g')
+        .replace(/ü/g, 'u')
+        .replace(/ş/g, 's')
+        .replace(/ö/g, 'o')
+        .replace(/ç/g, 'c');
+    }
+
+    function initGame() {
+      targetWord = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+      currentGuess = "";
+      currentRow = 0;
+      gameOver = false;
+      letterStates = {};
+      
+      const gameBoard = document.getElementById('game-board');
+      gameBoard.innerHTML = '';
+      
+      for (let i = 0; i < 6; i++) {
+        const row = document.createElement('div');
+        row.className = 'guess-row';
+        row.id = `row-${i}`;
+        
+        for (let j = 0; j < 5; j++) {
+          const box = document.createElement('div');
+          box.className = 'letter-box';
+          box.id = `box-${i}-${j}`;
+          row.appendChild(box);
+        }
+        
+        gameBoard.appendChild(row);
+      }
+
+      initKeyboard();
+      document.getElementById('guess-input').value = '';
+      document.getElementById('guess-input').disabled = false;
+      document.getElementById('submit-btn').disabled = false;
+      document.getElementById('message').classList.remove('show');
+      document.getElementById('new-game-btn').classList.remove('show');
+    }
+
+    function initKeyboard() {
+      const keyboard = document.getElementById('keyboard');
+      keyboard.innerHTML = '';
+      
+      turkishKeys.forEach(row => {
+        row.forEach(key => {
+          const keyBtn = document.createElement('button');
+          keyBtn.className = 'key';
+          keyBtn.textContent = key;
+          keyBtn.id = `key-${key}`;
+          keyBtn.onclick = () => {
+            if (!gameOver && currentGuess.length < 5) {
+              currentGuess += key;
+              document.getElementById('guess-input').value = currentGuess;
+              updateCurrentRow();
+            }
+          };
+          keyboard.appendChild(keyBtn);
+        });
+      });
+    }
+
+    function updateCurrentRow() {
+      for (let i = 0; i < 5; i++) {
+        const box = document.getElementById(`box-${currentRow}-${i}`);
+        if (i < currentGuess.length) {
+          box.textContent = currentGuess[i];
+          box.classList.add('filled');
+          box.classList.add('current');
+        } else {
+          box.textContent = '';
+          box.classList.remove('filled', 'current');
+        }
+      }
+    }
+
+    function showMessage(text, type) {
+      const message = document.getElementById('message');
+      message.textContent = text;
+      message.className = `message ${type} show`;
+      
+      setTimeout(() => {
+        message.classList.remove('show');
+      }, 3000);
+    }
+
+    function submitGuess() {
+      if (gameOver) return;
+      
+      if (currentGuess.length !== 5) {
+        showMessage('5 harfli kelime girmelisin!', 'error');
+        return;
+      }
+
+      const normalizedGuess = normalizeText(currentGuess);
+      const normalizedTarget = normalizeText(targetWord);
+      
+      const targetLetters = normalizedTarget.split('');
+      const guessLetters = normalizedGuess.split('');
+      const states = Array(5).fill('absent');
+      const usedIndices = new Set();
+
+      for (let i = 0; i < 5; i++) {
+        if (guessLetters[i] === targetLetters[i]) {
+          states[i] = 'correct';
+          usedIndices.add(i);
+        }
+      }
+
+      for (let i = 0; i < 5; i++) {
+        if (states[i] === 'correct') continue;
+        
+        for (let j = 0; j < 5; j++) {
+          if (!usedIndices.has(j) && guessLetters[i] === targetLetters[j]) {
+            states[i] = 'present';
+            usedIndices.add(j);
+            break;
+          }
+        }
+      }
+
+      for (let i = 0; i < 5; i++) {
+        const box = document.getElementById(`box-${currentRow}-${i}`);
+        box.classList.remove('current');
+        
+        setTimeout(() => {
+          box.classList.add(states[i]);
+        }, i * 100);
+
+        const letter = currentGuess[i];
+        if (!letterStates[letter] || 
+            (letterStates[letter] === 'absent' && states[i] !== 'absent') ||
+            (letterStates[letter] === 'present' && states[i] === 'correct')) {
+          letterStates[letter] = states[i];
+          
+          setTimeout(() => {
+            const keyBtn = document.getElementById(`key-${letter}`);
+            if (keyBtn) {
+              keyBtn.classList.remove('correct', 'present', 'absent');
+              keyBtn.classList.add(states[i]);
+            }
+          }, i * 100);
+        }
+      }
+
+      if (normalizedGuess === normalizedTarget) {
+        gameOver = true;
+        setTimeout(() => {
+          showMessage(`🎉 Tebrikler! Doğru kelime: ${targetWord.toUpperCase()}`, 'success');
+          document.getElementById('guess-input').disabled = true;
+          document.getElementById('submit-btn').disabled = true;
+          document.getElementById('new-game-btn').classList.add('show');
+        }, 600);
+        return;
+      }
+
+      currentRow++;
+      currentGuess = "";
+      document.getElementById('guess-input').value = '';
+
+      if (currentRow === 6) {
+        gameOver = true;
+        setTimeout(() => {
+          document.getElementById('guess-input').disabled = true;
+          document.getElementById('submit-btn').disabled = true;
+          document.getElementById('correct-word-display').textContent = targetWord.toUpperCase();
+          document.getElementById('game-over-modal').classList.add('show');
+        }, 600);
+      }
+    }
+
+    document.getElementById('guess-input').addEventListener('input', (e) => {
+      currentGuess = e.target.value.toLowerCase();
+      updateCurrentRow();
+    });
+
+    document.getElementById('guess-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        submitGuess();
+      }
+    });
+
+    document.getElementById('submit-btn').addEventListener('click', submitGuess);
+    document.getElementById('new-game-btn').addEventListener('click', initGame);
+
+    document.getElementById('info-btn').addEventListener('click', () => {
+      document.getElementById('info-modal').classList.add('show');
+    });
+
+    document.getElementById('close-info').addEventListener('click', () => {
+      document.getElementById('info-modal').classList.remove('show');
+    });
+
+    document.getElementById('start-playing').addEventListener('click', () => {
+      document.getElementById('info-modal').classList.remove('show');
+    });
+
+    document.getElementById('play-again-btn').addEventListener('click', () => {
+      document.getElementById('game-over-modal').classList.remove('show');
+      initGame();
+    });
+
+    document.getElementById('info-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'info-modal') {
+        document.getElementById('info-modal').classList.remove('show');
+      }
+    });
+
+    document.getElementById('game-over-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'game-over-modal') {
+        document.getElementById('game-over-modal').classList.remove('show');
+        initGame();
+      }
+    });
+
+    async function onConfigChange(config) {
+      const title = config.game_title || defaultConfig.game_title;
+      const instruction = config.instruction_text || defaultConfig.instruction_text;
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const secondaryColor = config.secondary_color || defaultConfig.secondary_color;
+      
+      document.getElementById('game-title').textContent = title;
+      document.getElementById('instruction-text').textContent = instruction;
+      
+      document.querySelector('h1').style.color = primaryColor;
+      document.querySelector('.game-wrapper').style.background = 
+        `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`;
+      document.getElementById('guess-input').style.borderColor = primaryColor;
+      document.querySelector('.btn-submit').style.background = primaryColor;
+      document.querySelector('.btn-new-game').style.background = secondaryColor;
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            },
+            {
+              get: () => config.secondary_color || defaultConfig.secondary_color,
+              set: (value) => {
+                config.secondary_color = value;
+                window.elementSdk.setConfig({ secondary_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["game_title", config.game_title || defaultConfig.game_title],
+          ["instruction_text", config.instruction_text || defaultConfig.instruction_text]
+        ])
+      });
+    }
+
+    initGame();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a61de7130376852',t:'MTc2NDQxNjgzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

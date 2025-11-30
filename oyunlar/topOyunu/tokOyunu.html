@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="tr">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pong</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', monospace;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .game-wrapper {
+      width: 100%;
+      height: 100%;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    .game-container {
+      background: #0a0a0a;
+      border: 4px solid #00ff00;
+      border-radius: 12px;
+      max-width: 900px;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      box-shadow: 0 0 40px rgba(0, 255, 0, 0.5), inset 0 0 30px rgba(0, 255, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Menu Screen */
+    .menu-screen {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 10;
+      padding: 40px;
+    }
+
+    .menu-screen.active {
+      display: flex;
+    }
+
+    h1 {
+      color: #00ff00;
+      font-size: 72px;
+      font-weight: bold;
+      margin: 0 0 20px 0;
+      text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
+      letter-spacing: 8px;
+    }
+
+    .menu-subtitle {
+      font-size: 24px;
+      color: #00ff00;
+      font-weight: bold;
+      margin-bottom: 40px;
+      text-shadow: 0 0 10px #00ff00;
+    }
+
+    .mode-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .mode-btn {
+      padding: 20px 40px;
+      border: 3px solid #00ff00;
+      border-radius: 8px;
+      background: rgba(0, 255, 0, 0.1);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 24px;
+      font-weight: bold;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 10px #00ff00;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+    }
+
+    .mode-btn:hover {
+      background: rgba(0, 255, 0, 0.2);
+      box-shadow: 0 0 30px rgba(0, 255, 0, 0.6);
+      transform: scale(1.05);
+    }
+
+    /* Game Screen */
+    .game-screen {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .game-screen.active {
+      display: block;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .score-display {
+      position: absolute;
+      top: 40px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .player-score {
+      text-align: center;
+    }
+
+    .player-name {
+      font-size: 18px;
+      color: #00ff00;
+      margin-bottom: 8px;
+      text-shadow: 0 0 10px #00ff00;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .score-value {
+      font-size: 64px;
+      color: #00ff00;
+      font-weight: bold;
+      text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
+    }
+
+    .controls-hint {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: #00ff00;
+      font-size: 14px;
+      opacity: 0.7;
+      text-shadow: 0 0 10px #00ff00;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .countdown-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
+      z-index: 15;
+    }
+
+    .countdown-overlay.show {
+      display: flex;
+    }
+
+    .countdown-number {
+      font-size: 180px;
+      font-weight: bold;
+      color: #00ff00;
+      text-shadow: 0 0 40px #00ff00, 0 0 80px #00ff00;
+      animation: countdownPulse 1s ease;
+    }
+
+    @keyframes countdownPulse {
+      0% {
+        transform: scale(0.5);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.2);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .pause-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px 20px;
+      background: rgba(0, 255, 0, 0.1);
+      border: 2px solid #00ff00;
+      border-radius: 6px;
+      color: #00ff00;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 10px #00ff00;
+      z-index: 5;
+      transition: all 0.2s ease;
+    }
+
+    .pause-btn:hover {
+      background: rgba(0, 255, 0, 0.2);
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+    }
+
+    /* Result Modal */
+    .result-modal {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 20;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      padding: 40px;
+    }
+
+    .result-modal.show {
+      display: flex;
+    }
+
+    .result-icon {
+      font-size: 96px;
+      margin-bottom: 24px;
+      animation: iconFloat 2s ease-in-out infinite;
+    }
+
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .result-text {
+      font-size: 48px;
+      font-weight: bold;
+      color: #00ff00;
+      margin-bottom: 16px;
+      text-shadow: 0 0 20px #00ff00, 0 0 40px #00ff00;
+    }
+
+    .result-subtitle {
+      font-size: 24px;
+      color: #00ff00;
+      margin-bottom: 40px;
+      text-shadow: 0 0 10px #00ff00;
+    }
+
+    .result-buttons {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .result-btn {
+      padding: 16px 32px;
+      background: rgba(0, 255, 0, 0.1);
+      border: 3px solid #00ff00;
+      border-radius: 8px;
+      color: #00ff00;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      text-shadow: 0 0 10px #00ff00;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+    }
+
+    .result-btn:hover {
+      background: rgba(0, 255, 0, 0.2);
+      box-shadow: 0 0 30px rgba(0, 255, 0, 0.6);
+      transform: scale(1.05);
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 48px;
+        letter-spacing: 4px;
+      }
+
+      .menu-subtitle {
+        font-size: 18px;
+      }
+
+      .mode-btn {
+        font-size: 20px;
+        padding: 16px 32px;
+      }
+
+      .score-value {
+        font-size: 48px;
+      }
+
+      .player-name {
+        font-size: 14px;
+      }
+
+      .result-text {
+        font-size: 36px;
+      }
+
+      .result-subtitle {
+        font-size: 18px;
+      }
+
+      .controls-hint {
+        font-size: 12px;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <main class="game-wrapper">
+   <div class="game-container"><!-- Menu Screen -->
+    <div class="menu-screen active" id="menu-screen">
+     <h1 id="game-title">PONG</h1>
+     <p class="menu-subtitle" id="mode-title">Oyun Modunu Seç</p>
+     <div class="mode-buttons"><button class="mode-btn" id="vs-computer-btn"> <span id="vs-computer-text">🤖 Bilgisayara Karşı</span> </button> <button class="mode-btn" id="two-player-btn"> <span id="two-player-text">👥 İki Kişilik</span> </button>
+     </div>
+    </div><!-- Game Screen -->
+    <div class="game-screen" id="game-screen">
+     <canvas id="game-canvas"></canvas><!-- Countdown Overlay -->
+     <div class="countdown-overlay" id="countdown-overlay">
+      <div class="countdown-number" id="countdown-number">
+       3
+      </div>
+     </div>
+     <div class="score-display">
+      <div class="player-score">
+       <div class="player-name" id="player-left-name">
+        Sen
+       </div>
+       <div class="score-value" id="score-left">
+        0
+       </div>
+      </div>
+      <div class="player-score">
+       <div class="player-name" id="player-right-name">
+        Bilgisayar
+       </div>
+       <div class="score-value" id="score-right">
+        0
+       </div>
+      </div>
+     </div>
+     <div class="controls-hint" id="controls-hint">
+      ↑↓ Ok Tuşları ile Oyna • ESC Ana Menü
+     </div><button class="pause-btn" id="pause-btn">← Ana Men����</button>
+    </div><!-- Result Modal -->
+    <div class="result-modal" id="result-modal">
+     <div class="result-icon" id="result-icon">
+      🏆
+     </div>
+     <div class="result-text" id="result-text">
+      Kazandın!
+     </div>
+     <div class="result-subtitle" id="result-subtitle">
+      İlk 5 sayıya ulaştın!
+     </div>
+     <div class="result-buttons"><button class="result-btn" id="play-again-btn">🔄 Tekrar Oyna</button> <button class="result-btn" id="menu-btn">🏠 Ana Menü</button>
+     </div>
+    </div>
+   </div>
+  </main>
+  <script>
+    const defaultConfig = {
+      game_title: "PONG",
+      mode_title: "Oyun Modunu Seç",
+      vs_computer_button: "🤖 Bilgisayara Karşı",
+      two_player_button: "👥 İki Kişilik",
+      player_left_label: "Sen",
+      player_right_label: "Bilgisayar",
+      primary_color: "#00ff00",
+      secondary_color: "#00ff00",
+      background_color: "#0a0a0a"
+    };
+
+    const menuScreen = document.getElementById('menu-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const vsComputerBtn = document.getElementById('vs-computer-btn');
+    const twoPlayerBtn = document.getElementById('two-player-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const resultModal = document.getElementById('result-modal');
+    const playAgainBtn = document.getElementById('play-again-btn');
+    const menuBtn = document.getElementById('menu-btn');
+    const scoreLefEl = document.getElementById('score-left');
+    const scoreRightEl = document.getElementById('score-right');
+    const countdownOverlay = document.getElementById('countdown-overlay');
+    const countdownNumber = document.getElementById('countdown-number');
+
+    let gameMode = null;
+    let gameRunning = false;
+    let animationId = null;
+
+    // Game objects
+    const ball = {
+      x: 0,
+      y: 0,
+      radius: 8,
+      velocityX: 5,
+      velocityY: 5,
+      speed: 5
+    };
+
+    const paddleWidth = 12;
+    const paddleHeight = 100;
+
+    const leftPaddle = {
+      x: 30,
+      y: 0,
+      width: paddleWidth,
+      height: paddleHeight,
+      score: 0
+    };
+
+    const rightPaddle = {
+      x: 0,
+      y: 0,
+      width: paddleWidth,
+      height: paddleHeight,
+      score: 0
+    };
+
+    const keys = {
+      w: false,
+      s: false,
+      arrowUp: false,
+      arrowDown: false
+    };
+
+    // Event Listeners
+    vsComputerBtn.addEventListener('click', () => startGame('computer'));
+    twoPlayerBtn.addEventListener('click', () => startGame('two-player'));
+    pauseBtn.addEventListener('click', showMenu);
+    playAgainBtn.addEventListener('click', restartGame);
+    menuBtn.addEventListener('click', showMenu);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'w' || e.key === 'W') keys.w = true;
+      if (e.key === 's' || e.key === 'S') keys.s = true;
+      if (e.key === 'ArrowUp') { e.preventDefault(); keys.arrowUp = true; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); keys.arrowDown = true; }
+      if (e.key === 'Escape') showMenu();
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.key === 'w' || e.key === 'W') keys.w = false;
+      if (e.key === 's' || e.key === 'S') keys.s = false;
+      if (e.key === 'ArrowUp') keys.arrowUp = false;
+      if (e.key === 'ArrowDown') keys.arrowDown = false;
+    });
+
+    function resizeCanvas() {
+      const container = canvas.parentElement;
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      
+      // Reset positions
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      leftPaddle.y = (canvas.height - paddleHeight) / 2;
+      rightPaddle.x = canvas.width - 30 - paddleWidth;
+      rightPaddle.y = (canvas.height - paddleHeight) / 2;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    function showMenu() {
+      gameRunning = false;
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
+      menuScreen.classList.add('active');
+      gameScreen.classList.remove('active');
+      resultModal.classList.remove('show');
+      gameMode = null;
+      leftPaddle.score = 0;
+      rightPaddle.score = 0;
+      updateScores();
+    }
+
+    function startGame(mode) {
+      gameMode = mode;
+      menuScreen.classList.remove('active');
+      gameScreen.classList.add('active');
+      resultModal.classList.remove('show');
+      
+      const config = window.elementSdk?.config || defaultConfig;
+      
+      if (mode === 'computer') {
+        document.getElementById('player-left-name').textContent = config.player_left_label || defaultConfig.player_left_label;
+        document.getElementById('player-right-name').textContent = config.player_right_label || defaultConfig.player_right_label;
+        document.getElementById('controls-hint').textContent = '↑↓ Ok Tuşları ile Oyna • ESC Ana Menü';
+      } else {
+        document.getElementById('player-left-name').textContent = 'Oyuncu 1';
+        document.getElementById('player-right-name').textContent = 'Oyuncu 2';
+        document.getElementById('controls-hint').textContent = 'Oyuncu 1: W/S • Oyuncu 2: ↑↓ • ESC Ana Menü';
+      }
+      
+      leftPaddle.score = 0;
+      rightPaddle.score = 0;
+      updateScores();
+      
+      resizeCanvas();
+      resetBall();
+      startCountdown();
+    }
+
+    function startCountdown() {
+      let count = 3;
+      countdownNumber.textContent = count;
+      countdownOverlay.classList.add('show');
+      
+      const countInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          countdownNumber.textContent = count;
+          countdownNumber.style.animation = 'none';
+          setTimeout(() => {
+            countdownNumber.style.animation = 'countdownPulse 1s ease';
+          }, 10);
+        } else {
+          countdownNumber.textContent = 'BAŞLA!';
+          countdownNumber.style.animation = 'none';
+          setTimeout(() => {
+            countdownNumber.style.animation = 'countdownPulse 1s ease';
+          }, 10);
+          
+          setTimeout(() => {
+            countdownOverlay.classList.remove('show');
+            gameRunning = true;
+            gameLoop();
+          }, 1000);
+          
+          clearInterval(countInterval);
+        }
+      }, 1000);
+    }
+
+    function restartGame() {
+      leftPaddle.score = 0;
+      rightPaddle.score = 0;
+      updateScores();
+      resultModal.classList.remove('show');
+      resetBall();
+      startCountdown();
+    }
+
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height / 2;
+      ball.speed = 5;
+      ball.velocityX = (Math.random() > 0.5 ? 1 : -1) * ball.speed;
+      ball.velocityY = (Math.random() * 2 - 1) * ball.speed;
+    }
+
+    function updateScores() {
+      scoreLefEl.textContent = leftPaddle.score;
+      scoreRightEl.textContent = rightPaddle.score;
+    }
+
+    function update() {
+      if (!gameRunning) return;
+
+      // Move ball
+      ball.x += ball.velocityX;
+      ball.y += ball.velocityY;
+
+      // Ball collision with top and bottom
+      if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+        ball.velocityY = -ball.velocityY;
+      }
+
+      // Ball collision with paddles
+      const paddle = ball.x < canvas.width / 2 ? leftPaddle : rightPaddle;
+      
+      if (collision(ball, paddle)) {
+        let collidePoint = ball.y - (paddle.y + paddle.height / 2);
+        collidePoint = collidePoint / (paddle.height / 2);
+        
+        let angleRad = (Math.PI / 4) * collidePoint;
+        
+        let direction = ball.x < canvas.width / 2 ? 1 : -1;
+        ball.velocityX = direction * ball.speed * Math.cos(angleRad);
+        ball.velocityY = ball.speed * Math.sin(angleRad);
+        
+        ball.speed += 0.3;
+      }
+
+      // Score
+      if (ball.x - ball.radius < 0) {
+        rightPaddle.score++;
+        updateScores();
+        if (!checkWinner()) {
+          gameRunning = false;
+          resetBall();
+          setTimeout(() => startCountdown(), 500);
+        }
+      } else if (ball.x + ball.radius > canvas.width) {
+        leftPaddle.score++;
+        updateScores();
+        if (!checkWinner()) {
+          gameRunning = false;
+          resetBall();
+          setTimeout(() => startCountdown(), 500);
+        }
+      }
+
+      // Move paddles
+      const paddleSpeed = 7;
+      
+      if (gameMode === 'two-player') {
+        // Player 1 (left) - W/S
+        if (keys.w && leftPaddle.y > 0) {
+          leftPaddle.y -= paddleSpeed;
+        }
+        if (keys.s && leftPaddle.y < canvas.height - leftPaddle.height) {
+          leftPaddle.y += paddleSpeed;
+        }
+        
+        // Player 2 (right) - Arrow keys
+        if (keys.arrowUp && rightPaddle.y > 0) {
+          rightPaddle.y -= paddleSpeed;
+        }
+        if (keys.arrowDown && rightPaddle.y < canvas.height - rightPaddle.height) {
+          rightPaddle.y += paddleSpeed;
+        }
+      } else {
+        // Player (left) - Arrow keys
+        if (keys.arrowUp && leftPaddle.y > 0) {
+          leftPaddle.y -= paddleSpeed;
+        }
+        if (keys.arrowDown && leftPaddle.y < canvas.height - leftPaddle.height) {
+          leftPaddle.y += paddleSpeed;
+        }
+        
+        // AI (right)
+        let targetY = ball.y - rightPaddle.height / 2;
+        let aiSpeed = 4.5;
+        
+        if (rightPaddle.y < targetY && rightPaddle.y < canvas.height - rightPaddle.height) {
+          rightPaddle.y += aiSpeed;
+        } else if (rightPaddle.y > targetY && rightPaddle.y > 0) {
+          rightPaddle.y -= aiSpeed;
+        }
+      }
+    }
+
+    function collision(ball, paddle) {
+      return ball.x - ball.radius < paddle.x + paddle.width &&
+             ball.x + ball.radius > paddle.x &&
+             ball.y - ball.radius < paddle.y + paddle.height &&
+             ball.y + ball.radius > paddle.y;
+    }
+
+    function checkWinner() {
+      if (leftPaddle.score >= 5 || rightPaddle.score >= 5) {
+        gameRunning = false;
+        const config = window.elementSdk?.config || defaultConfig;
+        
+        if (leftPaddle.score >= 5) {
+          document.getElementById('result-icon').textContent = '🏆';
+          const winnerName = gameMode === 'computer' 
+            ? (config.player_left_label || defaultConfig.player_left_label)
+            : 'Oyuncu 1';
+          document.getElementById('result-text').textContent = `${winnerName} Kazandı!`;
+          document.getElementById('result-subtitle').textContent = 'Muhteşem oyun!';
+        } else {
+          const winnerName = gameMode === 'computer'
+            ? (config.player_right_label || defaultConfig.player_right_label)
+            : 'Oyuncu 2';
+          document.getElementById('result-icon').textContent = gameMode === 'computer' ? '🤖' : '🏆';
+          document.getElementById('result-text').textContent = `${winnerName} Kazandı!`;
+          document.getElementById('result-subtitle').textContent = gameMode === 'computer' ? 'Belki bir dahaki sefere!' : 'Muhteşem oyun!';
+        }
+        
+        resultModal.classList.add('show');
+        return true;
+      }
+      return false;
+    }
+
+    function draw() {
+      const primaryColor = (window.elementSdk?.config?.primary_color || defaultConfig.primary_color);
+      const backgroundColor = (window.elementSdk?.config?.background_color || defaultConfig.background_color);
+      
+      // Clear canvas
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw center line
+      ctx.setLineDash([10, 10]);
+      ctx.strokeStyle = primaryColor;
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+
+      // Draw paddles
+      ctx.fillStyle = primaryColor;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = primaryColor;
+      ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
+      ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
+
+      // Draw ball
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = primaryColor;
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = primaryColor;
+      ctx.fill();
+      ctx.closePath();
+      
+      ctx.shadowBlur = 0;
+    }
+
+    function gameLoop() {
+      if (!gameRunning) return;
+      
+      update();
+      draw();
+      
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    async function onConfigChange(config) {
+      const title = config.game_title || defaultConfig.game_title;
+      const modeTitle = config.mode_title || defaultConfig.mode_title;
+      const vsComputerText = config.vs_computer_button || defaultConfig.vs_computer_button;
+      const twoPlayerText = config.two_player_button || defaultConfig.two_player_button;
+      const playerLeftLabel = config.player_left_label || defaultConfig.player_left_label;
+      const playerRightLabel = config.player_right_label || defaultConfig.player_right_label;
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const secondaryColor = config.secondary_color || defaultConfig.secondary_color;
+      const backgroundColor = config.background_color || defaultConfig.background_color;
+
+      document.getElementById('game-title').textContent = title;
+      document.getElementById('mode-title').textContent = modeTitle;
+      document.getElementById('vs-computer-text').textContent = vsComputerText;
+      document.getElementById('two-player-text').textContent = twoPlayerText;
+
+      if (gameMode === 'computer') {
+        document.getElementById('player-left-name').textContent = playerLeftLabel;
+        document.getElementById('player-right-name').textContent = playerRightLabel;
+      }
+
+      document.querySelector('h1').style.color = primaryColor;
+      document.querySelector('h1').style.textShadow = `0 0 20px ${primaryColor}, 0 0 40px ${primaryColor}`;
+      
+      document.querySelector('.game-container').style.borderColor = primaryColor;
+      document.querySelector('.game-container').style.boxShadow = 
+        `0 0 40px ${primaryColor}80, inset 0 0 30px ${primaryColor}20`;
+      
+      document.querySelectorAll('.menu-subtitle, .mode-btn, .player-name, .score-value, .controls-hint, .pause-btn, .result-text, .result-subtitle, .result-btn').forEach(el => {
+        el.style.color = primaryColor;
+        if (el.classList.contains('mode-btn') || el.classList.contains('pause-btn') || el.classList.contains('result-btn')) {
+          el.style.borderColor = primaryColor;
+          el.style.textShadow = `0 0 10px ${primaryColor}`;
+          el.style.boxShadow = `0 0 15px ${primaryColor}50`;
+        } else if (el.classList.contains('score-value') || el.classList.contains('result-text')) {
+          el.style.textShadow = `0 0 20px ${primaryColor}, 0 0 40px ${primaryColor}`;
+        } else {
+          el.style.textShadow = `0 0 10px ${primaryColor}`;
+        }
+      });
+
+      document.querySelector('.game-container').style.background = backgroundColor;
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            },
+            {
+              get: () => config.secondary_color || defaultConfig.secondary_color,
+              set: (value) => {
+                config.secondary_color = value;
+                window.elementSdk.setConfig({ secondary_color: value });
+              }
+            },
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (value) => {
+                config.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["game_title", config.game_title || defaultConfig.game_title],
+          ["mode_title", config.mode_title || defaultConfig.mode_title],
+          ["vs_computer_button", config.vs_computer_button || defaultConfig.vs_computer_button],
+          ["two_player_button", config.two_player_button || defaultConfig.two_player_button],
+          ["player_left_label", config.player_left_label || defaultConfig.player_left_label],
+          ["player_right_label", config.player_right_label || defaultConfig.player_right_label]
+        ])
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a622ac6319b6852',t:'MTc2NDQxOTk1OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Troll Refleks Oyunu</title>
+
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+            background: #111;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+
+        #game-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        #header {
+            padding-top: 10px;
+            font-size: 22px;
+        }
+
+        #info {
+            margin-top: -10px;
+        }
+
+        #box {
+            width: 80px;
+            height: 80px;
+            background: #ff4747;
+            position: absolute;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            user-select: none;
+            touch-action: none;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        #face {
+            font-family: monospace;
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+
+        #taunt {
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        #popup-bg {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+        }
+
+        #popup {
+            background: #222;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            width: 260px;
+        }
+
+        #popup button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #ff4444;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #popup button:hover {
+            background: #ff2222;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-area">
+        <div id="header">Refleks Testi</div>
+        <div id="info">
+            <p id="timer">Süre: 30</p>
+            <p id="score">Skor: 0</p>
+        </div>
+
+        <div id="box">
+            <div id="face">( ͡° ͜ʖ ͡°)</div>
+            <div id="taunt"> </div>
+        </div>
+    </div>
+
+    <div id="popup-bg">
+        <div id="popup">
+            <h3>Oyun Bitti!</h3>
+            <p id="final-score"></p>
+            <p id="max-score"></p>
+            <button onclick="restartGame()">Tekrar Oyna</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let time = 30;
+        let interval;
+        let faceTimeout; // Mesaj çakışmasını önlemek için global
+
+        const box = document.getElementById("box");
+        const face = document.getElementById("face");
+        const taunt = document.getElementById("taunt");
+        const scoreEl = document.getElementById("score");
+        const timerEl = document.getElementById("timer");
+        const gameArea = document.getElementById("game-area");
+
+        const popupBg = document.getElementById("popup-bg");
+        const finalScoreEl = document.getElementById("final-score");
+        const maxScoreEl = document.getElementById("max-score");
+
+        let bestScore = localStorage.getItem("bestScore") || 0;
+
+        // Dalga geçici mesajlar
+        const messages = [
+            "Bu kadar mı hızlısın? 😂",
+            "Hadi daha hızlı!",
+            "Yavaşsın yavaş! 😆",
+            "Ooo iyi tıkladın!",
+            "Bunu beklemiyordun dimi? 😏",
+            "Cık cık… amatör 😜",
+            "Biraz hızlan dostum 😎",
+            "Puhahahaha! 😂",
+            "Bu kadar kötümüydün! 😝",
+            "Daha hızlı ol lütfen. 😏",
+            "Refleks mi? Nerede?",
+            "Pırtt! Çok yavaşsın! 😄",
+            "Pırt 💩",
+            "Ohooo… daha çok fırın ekmek yersin! 🍞",
+            "Hız dedin de güldürme beni 😂",
+            "Tavuk musun sen? 🐔",
+            "Daha mouse'u tutmayı öğrenemedin mi?",
+            "Görmüyormuş gibi yapıyorum… 😵",
+            "Az önce uyudun mu? 😴"
+        ];
+
+        // Kutunun rastgele pozisyonu
+        function randomPosition() {
+            const maxX = gameArea.clientWidth - 80;
+            const maxY = gameArea.clientHeight - 80;
+
+            box.style.left = Math.random() * maxX + "px";
+            box.style.top = Math.random() * maxY + "px";
+        }
+
+        // Mesaj ve yüz gösterme fonksiyonu
+        function showFaceAndMessage() {
+            // Önceki zamanlayıcıyı temizle
+            clearTimeout(faceTimeout);
+
+            // Yeni yüz ve mesaj
+            const faces = ["( ͡° ͜ʖ ͡°)", "(¬‿¬)", "(•_•)", "(ಠ‿ಠ)", "(͡•͜ʖ͡•)"];
+            face.textContent = faces[Math.floor(Math.random() * faces.length)];
+
+            taunt.textContent = messages[Math.floor(Math.random() * messages.length)];
+
+            // Görünür yap
+            taunt.style.opacity = 1;
+
+            // Süre sonunda kaybol
+            faceTimeout = setTimeout(() => {
+                taunt.style.opacity = 0;
+            }, 5000); // <<< MESAJIN KALMA SÜRESİ (ms)
+        }
+
+        // Tıklama olayı
+        box.addEventListener("click", () => {
+            score++;
+            scoreEl.textContent = "Skor: " + score;
+
+            randomPosition();
+            showFaceAndMessage();
+        });
+
+        function startGame() {
+            score = 0;
+            time = 30;
+
+            scoreEl.textContent = "Skor: 0";
+            timerEl.textContent = "Süre: 30";
+
+            box.style.display = "flex";
+            randomPosition();
+
+            interval = setInterval(() => {
+                time--;
+                timerEl.textContent = "Süre: " + time;
+
+                if (time <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            clearInterval(interval);
+            box.style.display = "none";
+
+            finalScoreEl.textContent = "Skorun: " + score;
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem("bestScore", bestScore);
+            }
+
+            maxScoreEl.textContent = "Max Skor: " + bestScore;
+            popupBg.style.display = "flex";
+        }
+
+        function restartGame() {
+            popupBg.style.display = "none";
+            startGame();
+        }
+
+        startGame();
+    </script>
+
+</body>
+</html>

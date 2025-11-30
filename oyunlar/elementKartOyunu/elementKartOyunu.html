@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kart Arenası</title>
+<style>
+  :root{
+    --bg1:#071022; --accent:#ffd24d; --card-shadow: 0 8px 20px rgba(0,0,0,0.5);
+  }
+  *{box-sizing:border-box;font-family:Inter,Arial,Helvetica,sans-serif}
+  body{margin:0;min-height:100vh;background:linear-gradient(180deg,var(--bg1),#102436);color:#eef;display:flex;flex-direction:column;align-items:center;padding:18px;gap:10px}
+  h1{margin:6px 0;color:var(--accent);letter-spacing:1px}
+
+  /* arena layout */
+  .arena{width:100%;max-width:980px;display:flex;flex-direction:column;gap:12px;align-items:center}
+  .bars{width:100%;display:flex;justify-content:space-between;gap:12px}
+  .panel{background:rgba(255,255,255,0.03);padding:10px;border-radius:10px;width:48%;box-shadow:var(--card-shadow)}
+  .hpLabel{font-size:14px;opacity:0.9;margin-bottom:6px}
+  .hpBar{position:relative;width:100%;height:18px;background:rgba(255,255,255,0.06);border-radius:9px;overflow:hidden;border:1px solid rgba(255,255,255,0.04)}
+  .shieldFill{position:absolute;left:0;height:100%;background:linear-gradient(90deg,#55aaff,#2e7cff);width:0%;transition:width .45s}
+  .hpFill{position:absolute;left:0;height:100%;background:linear-gradient(90deg,#55dd77,#2ebf63);width:100%;transition:width .45s}
+
+  .centerRow{display:flex;gap:12px;align-items:center}
+  .statusBox{background:rgba(255,255,255,0.02);padding:10px;border-radius:10px;min-width:220px;text-align:center}
+  .turnTag{padding:6px 10px;background:#0e7cff;color:#001; border-radius:8px;font-weight:700;display:inline-block}
+
+  /* cards area */
+  .cardsArea{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px}
+  .enemyInfo{width:100%;display:flex;justify-content:center;gap:18px;align-items:center}
+  .enemyBack{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;min-width:180px}
+
+  .hand{display:flex;gap:10px;align-items:end;min-height:180px;padding:8px}
+  .card{
+    width:140px;height:180px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02));
+    box-shadow:var(--card-shadow);border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;justify-content:space-between;padding:10px;cursor:pointer;position:relative;transition:transform .12s,box-shadow .12s,opacity .12s;
+  }
+  .card.disabled{opacity:.45;cursor:not-allowed}
+  .card:hover{transform:translateY(-6px);box-shadow:0 18px 30px rgba(0,0,0,0.6)}
+  .card .title{font-weight:700;margin-bottom:6px}
+  .card .desc{font-size:13px;opacity:0.95;text-align:right}
+  .cost{position:absolute;left:10px;bottom:10px;background:rgba(0,0,0,0.35);padding:6px 8px;border-radius:8px;font-weight:700}
+  .typeTag{position:absolute;right:10px;top:10px;padding:6px 8px;border-radius:8px;font-weight:700;font-size:12px}
+
+  /* element colors */
+  .fire{background:linear-gradient(135deg,#ffb997,#ff6b6b)}
+  .water{background:linear-gradient(135deg,#a7f3ff,#6fb3ff);color:#07223a}
+  .electric{background:linear-gradient(135deg,#fff7a8,#ffd36b);color:#2b2300}
+  .nature{background:linear-gradient(135deg,#c3f6b9,#7ee787);color:#1b3a19}
+  .ice{background:linear-gradient(135deg,#dff4ff,#a6e1ff);color:#05223a}
+
+  /* energy / controls */
+  .controls{display:flex;gap:12px;align-items:center}
+  .energyBox{background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;min-width:160px;text-align:center}
+  .energyBar{width:100%;height:10px;background:rgba(255,255,255,0.06);border-radius:6px;margin-top:6px;overflow:hidden}
+  .energyFill{height:100%;background:linear-gradient(90deg,#ffd24d,#ff8a00);width:40%;transition:width .3s}
+
+  .btn{padding:8px 12px;border-radius:8px;border:none;background:#0e7cff;color:#001;font-weight:700;cursor:pointer}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff}
+
+  /* draw anim */
+  .drawAnim{
+    position:fixed;left:50%;top:-180px;transform:translateX(-50%);z-index:60;transition:top .6s cubic-bezier(.2,.9,.2,1),opacity .6s;
+  }
+
+  .log{min-height:36px;background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;width:100%;max-width:760px;text-align:center;font-size:14px}
+
+  /* responsive */
+  @media(max-width:760px){
+    .card{width:110px;height:150px}
+    .hand{overflow:auto;padding:12px}
+    .panel{width:48%}
+  }
+</style>
+</head>
+<body>
+  <h1>⚔️ Kart Arenası — Sıra & Enerji</h1>
+
+  <div class="arena">
+    <div class="bars">
+      <div class="panel">
+        <div class="hpLabel">🤖 AI Can: <strong id="aiHPLabel">100</strong> (Zırh: <span id="aiShield">0</span>)</div>
+        <div class="hpBar"><div class="shieldFill" id="aiShieldFill"></div><div id="aiHP" class="hpFill"></div></div>
+        <div style="margin-top:8px;font-size:13px">AI elinde: <span id="aiHandCount">0</span> kart (görünmüyor)</div>
+      </div>
+
+      <div class="panel" style="text-align:center">
+        <div class="statusBox">
+          <div id="turnIndicator" class="turnTag">Sıra: Yükleniyor...</div>
+          <div style="margin-top:8px">Senin Can: <strong id="playerHPLabel">100</strong> (Zırh: <span id="playerShield">0</span>)</div>
+          <div class="hpBar"><div class="shieldFill" id="playerShieldFill"></div><div id="playerHP" class="hpFill"></div></div>
+          <div style="margin-top:8px;font-size:13px">Senin Durum: <span id="playerStatus">Normal</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="centerRow" style="width:100%;max-width:980px;justify-content:space-between">
+      <div class="controls">
+        <div class="energyBox">
+          <div>⚡ Enerji: <strong id="energyVal">3</strong> / 10</div>
+          <div class="energyBar"><div id="energyFill" class="energyFill" style="width:30%"></div></div>
+          <div style="font-size:12px;margin-top:6px;color:rgba(255,255,255,0.7)">Her tur +2 enerji (maks 10). Pas +2 enerji</div>
+        </div>
+
+        <div>
+          <button id="passBtn" class="btn ghost">Pas ( +2 Enerji )</button>
+        </div>
+      </div>
+
+      <div style="min-width:220px;text-align:center">
+        <button id="restart" class="btn" style="display:none">Yeniden Başla</button>
+      </div>
+    </div>
+
+    <div class="cardsArea" style="width:100%;max-width:980px">
+      <div class="enemyInfo">
+        <div class="enemyBack">AI</div>
+      </div>
+
+      <div class="log" id="log">Oyun başlıyor... Sıra sana ya da AI'ye geçecek.</div>
+
+      <div class="hand" id="hand"></div>
+    </div>
+  </div>
+
+  <!-- draw animation node -->
+  <div id="drawAnimContainer"></div>
+
+<script>
+/* ====== Oyun parametreleri ====== */
+const MAX_ENERGY = 10;
+const TURN_ENERGY_GAIN = 2; // her tur +2
+const PASS_ENERGY = 2;      // pas +2
+const START_ENERGY = 4;
+const START_HAND = 3;
+const MAX_HAND = 5;
+const START_HP = 100;
+
+/* ====== Kart tanımları (isim,tip,damage,heal,stun,shield,cost) ====== */
+const CARD_POOL = [
+  { id:'fireball', name:'Alev Topu', type:'fire', dmg:18, heal:0, stun:false, shield:0, cost:3 },
+  { id:'smolFire', name:'Küçük Alev', type:'fire', dmg:12, heal:0, stun:false, shield:0, cost:2 },
+  { id:'healRain', name:'Şifa Yağmuru', type:'water', dmg:0, heal:15, stun:false, shield:0, cost:3 },
+  { id:'spark', name:'Şimşek Oku', type:'electric', dmg:14, heal:0, stun:false, shield:0, cost:3 },
+  { id:'zap', name:'Zayıf Şimşek', type:'electric', dmg:9, heal:0, stun:false, shield:0, cost:2 },
+  { id:'thorn', name:'Dikenli Zırh', type:'nature', dmg:8, heal:3, stun:false, shield:8, cost:3 }, // gives shield to self
+  { id:'ice', name:'Buz Patlaması', type:'ice', dmg:12, heal:0, stun:true, shield:0, cost:4 },
+  { id:'energy', name:'Enerji Patlaması', type:'electric', dmg:0, heal:0, stun:false, shield:0, cost:1, energyGain:3 },
+  { id:'block', name:'Kalkan', type:'nature', dmg:0, heal:0, stun:false, shield:12, cost:2 },
+  { id:'bigStrike', name:'Büyük Darbe', type:'fire', dmg:25, heal:0, stun:false, shield:0, cost:5 },
+  { id:'shadowStrike', name:'Gölge Saldırısı', type:'fire', dmg:14, heal:0, stun:false, shield:5, cost:3 },
+
+];
+
+/* ====== Oyun durumu ====== */
+let player = { hp: START_HP, shield:0, stunned:false, blockDamage:false };
+let ai = { hp: START_HP, shield:0, stunned:false, blockDamage:false };
+let energy = START_ENERGY;
+let hand = []; // player hand cards
+let aiHandCount = 0;
+let isPlayerTurn = true;
+let gameOver = false;
+
+/* UI refs */
+const handDiv = document.getElementById('hand');
+const log = document.getElementById('log');
+const energyVal = document.getElementById('energyVal');
+const energyFill = document.getElementById('energyFill');
+const aiHPFill = document.getElementById('aiHP');
+const playerHPFill = document.getElementById('playerHPLabel');
+const aiHandCountEl = document.getElementById('aiHandCount');
+const turnIndicator = document.getElementById('turnIndicator');
+const passBtn = document.getElementById('passBtn');
+const restartBtn = document.getElementById('restart');
+const drawAnimContainer = document.getElementById('drawAnimContainer');
+const aiShieldEl = document.getElementById('aiShield');
+const aiHPLabel = document.getElementById('aiHPLabel');
+const playerShieldEl = document.getElementById('playerShield');
+const aiShieldFill = document.getElementById('aiShieldFill');
+const playerShieldFill = document.getElementById('playerShieldFill');
+
+/* ====== Yardımcı fonksiyonlar ====== */
+function randCard(){ return JSON.parse(JSON.stringify(CARD_POOL[Math.floor(Math.random()*CARD_POOL.length)])); }
+function clamp(n,a,b){ return Math.max(a,Math.min(b,n)); }
+function updateUI(){
+  energyVal.innerText = energy;
+  energyFill.style.width = (energy / MAX_ENERGY * 100) + '%';
+  aiHPFill.style.width = (ai.hp / START_HP * 100) + '%';
+  aiHPLabel.innerText = ai.hp;
+  playerHPFill.innerText = player.hp;
+  const playerHPFillEl = document.getElementById('playerHP');
+  playerHPFillEl.style.width = (player.hp / START_HP * 100) + '%';
+  aiHandCountEl.innerText = aiHandCount;
+  aiShieldEl.innerText = ai.shield;
+  playerShieldEl.innerText = player.shield;
+  let playerStatus = 'Normal';
+  if(player.stunned && player.blockDamage) playerStatus = 'Donmuş ve Blok';
+  else if(player.stunned) playerStatus = 'Donmuş';
+  else if(player.blockDamage) playerStatus = 'Blok';
+  document.getElementById('playerStatus').innerText = playerStatus;
+  turnIndicator.innerText = isPlayerTurn ? 'Sıra: Sen' : 'Sıra: AI';
+  // Update shield bars
+  aiShieldFill.style.width = (ai.shield / START_HP * 100) + '%';
+  playerShieldFill.style.width = (player.shield / START_HP * 100) + '%';
+  // Update HP bar color based on shield presence
+  if(ai.shield > 0){
+    aiHPFill.style.background = 'linear-gradient(90deg,#55dd77,#2ebf63,#55aaff)';
+  } else {
+    aiHPFill.style.background = 'linear-gradient(90deg,#55dd77,#2ebf63)';
+  }
+  if(player.shield > 0){
+    playerHPFillEl.style.background = 'linear-gradient(90deg,#55dd77,#2ebf63,#55aaff)';
+  } else {
+    playerHPFillEl.style.background = 'linear-gradient(90deg,#55dd77,#2ebf63)';
+  }
+}
+
+/* draw anim callback (ortaya patlayarak gelir) */
+function drawCardAnim(card, slotIdx, cb){
+  const node = document.createElement('div');
+  node.className = 'card drawAnim ' + card.type;
+  node.style.width = '160px'; node.style.height = '200px';
+  node.style.padding = '12px';
+  node.style.left = '50%'; node.style.top = '50%';
+  node.style.transform = 'translate(-50%, -50%) scale(0)';
+  node.style.opacity = '0';
+  // Use safe DOM insertion (avoid injecting untrusted strings via innerHTML)
+  const titleDiv = document.createElement('div');
+  titleDiv.className = 'title';
+  titleDiv.textContent = card.name;
+
+  const descDiv = document.createElement('div');
+  descDiv.className = 'desc';
+  descDiv.style.fontSize = '13px';
+  descDiv.style.marginTop = '6px';
+  let parts = [];
+  if(card.dmg) parts.push('Hasar: ' + card.dmg);
+  if(card.heal) parts.push('İyileş: ' + card.heal);
+  if(card.shield) parts.push('Zırh: ' + card.shield);
+  descDiv.innerHTML = parts.join('<br>');
+
+  const costDiv = document.createElement('div');
+  costDiv.className = 'cost';
+  costDiv.textContent = '⚡ ' + card.cost;
+
+  node.appendChild(titleDiv);
+  node.appendChild(descDiv);
+  node.appendChild(costDiv);
+  drawAnimContainer.appendChild(node);
+  // appear in center and explode (scale up)
+  setTimeout(() => {
+    node.style.opacity = '1';
+    node.style.transform = 'translate(-50%, -50%) scale(1.5)';
+  }, 20);
+  // then shrink back
+  setTimeout(() => {
+    node.style.transform = 'translate(-50%, -50%) scale(1)';
+  }, 400);
+  // teleport to hand slot
+  setTimeout(() => {
+    const handRect = handDiv.getBoundingClientRect();
+    const cardWidth = 160;
+    const slotX = handRect.left + slotIdx * (cardWidth + 16) + cardWidth / 2;
+    const slotY = handRect.top + handRect.height / 2;
+    node.style.left = slotX + 'px';
+    node.style.top = slotY + 'px';
+    node.style.transform = 'translate(-50%, -50%) scale(0.8)';
+  }, 800);
+  // fade out and remove
+  setTimeout(() => {
+    node.style.opacity = '0';
+    setTimeout(() => { node.remove(); cb(); }, 300);
+  }, 1200);
+}
+
+/* ====== Başlangıç desteği çekme ====== */
+function initialDraw(){
+  hand = [];
+  for(let i=0;i<START_HAND;i++) hand.push(randCard());
+  aiHandCount = START_HAND;
+  updateUI();
+  renderHand();
+}
+
+/* Render player hand */
+function renderHand(){
+  handDiv.innerHTML = '';
+  for(let i=0;i<hand.length;i++){
+    const c = hand[i];
+    const el = document.createElement('div');
+    el.className = 'card ' + c.type;
+    if(!isPlayerTurn || energy < c.cost || gameOver) el.classList.add('disabled');
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = c.name;
+
+    const desc = document.createElement('div');
+    desc.className = 'desc';
+    const descParts = [];
+    if (c.dmg) descParts.push('Hasar: ' + c.dmg);
+    if (c.heal) descParts.push('İyileş: ' + c.heal);
+    if (c.shield) descParts.push('Zırh: ' + c.shield);
+    if (c.stun) descParts.push('Donma: Evet');
+    if (c.energyGain) descParts.push('Enerji: +' + c.energyGain);
+    if (c.healFromNextDamage) descParts.push('Bir sonraki saldırının verdiği hasar kadar iyileş');
+    // desc may contain line breaks; safe to set innerHTML with joined <br> because content came from numeric/controlled values
+    desc.innerHTML = descParts.join('<br>');
+
+    const costNode = document.createElement('div');
+    costNode.className = 'cost';
+    costNode.textContent = '⚡ ' + c.cost;
+
+    el.appendChild(title);
+    el.appendChild(desc);
+    el.appendChild(costNode);
+    el.onclick = ()=>{ if(isPlayerTurn && !gameOver) playCard(i); };
+    handDiv.appendChild(el);
+  }
+  // if less than MAX_HAND, show placeholder slots
+  for(let s=hand.length; s<MAX_HAND; s++){
+    const ph = document.createElement('div');
+    ph.className = 'card'; ph.style.opacity = 0.18; ph.style.cursor='default';
+    ph.innerHTML = '<div style="opacity:0.5">Boş</div>';
+    handDiv.appendChild(ph);
+  }
+}
+
+/* Play a card from hand index */
+function playCard(index){
+  const card = hand[index];
+  if(!card) return;
+  if(energy < card.cost) { logMsg('Yeterli enerjin yok!'); return; }
+  if(!isPlayerTurn) return;
+  // consume energy
+  energy = clamp(energy - card.cost, 0, MAX_ENERGY);
+  // apply card effect to AI or player
+  applyCardEffect(card, true);
+  // remove card from hand
+  hand.splice(index,1);
+  // draw if hand less than max and not full
+  setTimeout(()=>{ tryDrawToHand(); }, 350);
+  endPlayerTurn();
+  renderHand(); updateUI();
+}
+
+/* Apply card effects: isPlayer true => attacker is player */
+function applyCardEffect(card, isPlayer){
+  const attacker = isPlayer ? player : ai;
+  const defender = isPlayer ? ai : player;
+  let text = '';
+  // damage first: consider shield on defender
+  if(card.dmg>0){
+    if(defender.blockDamage){
+      text += `${isPlayer? 'Sen' : 'AI'} ${card.name} kullandı — ${isPlayer? 'AI' : 'Sen'} hasar bloke edildi! `;
+      defender.blockDamage = false; // reset after blocking
+    } else {
+      let dmg = card.dmg;
+      // AI deals 20% less damage to make it weaker
+      if(!isPlayer){
+        dmg = Math.floor(dmg * 0.8);
+      }
+      // shield absorbs
+      if(defender.shield > 0){
+        const absorb = Math.min(defender.shield, dmg);
+        defender.shield -= absorb;
+        dmg -= absorb;
+      }
+      if(dmg>0){
+        defender.hp = Math.max(0, defender.hp - dmg);
+      }
+      text += `${isPlayer? 'Sen' : 'AI'} ${card.name} kullandı — ${isPlayer? 'AI' : 'Sen'} -${dmg} (zırh emildi) `;
+      showEffect(card.type);
+    }
+  }
+  if(card.heal>0){
+    attacker.hp = Math.min(START_HP, attacker.hp + card.heal);
+    text += `${isPlayer? ( 'Sen' ) : 'AI'} ${card.heal} HP iyileşti. `;
+  }
+  if(card.shield && card.shield>0){
+    attacker.shield = (attacker.shield || 0) + card.shield;
+    text += `${isPlayer? 'Sen' : 'AI'} +${card.shield} zırh kazandı. `;
+  }
+  if(card.stun){
+    defender.stunned = true;
+    text += `${isPlayer? 'AI' : 'Sen'} 1 tur dondu! `;
+  }
+  if(card.energyGain){
+    attacker.energy = (attacker.energy||0) + card.energyGain; // for AI use maybe
+    if(isPlayer) { energy = clamp(energy + card.energyGain, 0, MAX_ENERGY); }
+    text += `${isPlayer? 'Sen' : 'AI'} +${card.energyGain} enerji kazandı. `;
+  }
+  if(card.blockDamage){
+    defender.blockDamage = true;
+    text += `${isPlayer? 'AI' : 'Sen'} 1 tur hasar kartlarını bloke etti! `;
+  }
+  if(card.healFromNextDamage){
+    attacker.healFromNextDamage = true;
+    text += `${isPlayer? 'Sen' : 'AI'} bir sonraki saldırısının verdiği hasar kadar iyileşti! `;
+  }
+  logMsg(text);
+  updateUI();
+}
+
+/* show simple large effect symbol */
+function showEffect(type){
+  const sym = type==='fire' ? '🔥' : type==='electric' ? '⚡' : type==='ice' ? '❄️' : '🌿';
+  const e = document.createElement('div'); e.className='effect'; e.textContent = sym;
+  document.body.appendChild(e);
+  setTimeout(()=>e.remove(),800);
+}
+
+/* Try draw to hand with animation if possible */
+function tryDrawToHand(){
+  if(hand.length >= MAX_HAND) { updateUI(); return; }
+  // draw one card from pool
+  const newCard = randCard();
+  // animate
+  drawCardAnim(newCard, hand.length, ()=>{
+    hand.push(newCard);
+    renderHand();
+    updateUI();
+  });
+}
+
+/* End player's turn -> AI turn after short delay */
+function endPlayerTurn(){
+  isPlayerTurn = false;
+  updateUI(); renderHand();
+  setTimeout(()=> aiTurn(), 700);
+}
+
+/* AI logic */
+function aiTurn(){
+  if(gameOver) return;
+  // AI energy regen
+  ai.energy = (ai.energy || START_ENERGY) + TURN_ENERGY_GAIN;
+  ai.energy = clamp(ai.energy, 0, MAX_ENERGY);
+
+  // simple AI behavior: if stunned, skip
+  if(ai.stunned){
+    logMsg('AI dondu ve pas geçti.');
+    ai.stunned = false;
+    // player gets turn, also player gains turn energy
+    turnBeginForPlayer();
+    return;
+  }
+
+  // If AI hp low and has heal available (simulate by chance), use heal if affordable
+  // We'll let AI "pretend" to have a hand by sampling few tries from pool
+  const choices = [];
+  for(let i=0;i<6;i++){ // sample options
+    const c = randCard();
+    if((ai.energy || 0) >= c.cost) choices.push(c);
+  }
+
+  // prefer heal if hp < 40
+  let pick = null;
+  if(ai.hp < 40){
+    pick = choices.find(c => c.heal>0) || choices.find(c=>c.shield>0) || choices[Math.floor(Math.random()*choices.length)];
+  } else {
+    // prefer damage if player has no shield or low hp
+    pick = choices.find(c => c.dmg >= 15) || choices[Math.floor(Math.random()*choices.length)];
+  }
+  if(!pick) pick = randCard();
+
+  // consume AI energy
+  ai.energy = clamp((ai.energy||START_ENERGY) - (pick.cost||0), 0, MAX_ENERGY);
+
+  // apply effect as AI
+  applyCardEffect(pick,false);
+
+  // AI "draw" a card to its hidden hand (simulate increase)
+  aiHandCount = clamp(aiHandCount + 1, 0, MAX_HAND);
+
+  // check end or give turn back
+  if(checkGameOver()) return;
+  // AI turn ends -> player turn begins, player gains turn energy
+  setTimeout(()=> turnBeginForPlayer(), 900);
+}
+
+/* Player turn begin: energy regen */
+function turnBeginForPlayer(){
+  if(gameOver) return;
+  // check if player is stunned
+  if(player.stunned){
+    logMsg('Donmuşsun ve pas geçiyorsun.');
+    player.stunned = false;
+    player.blockDamage = false; // reset blockDamage
+    // AI gets turn
+    setTimeout(()=> aiTurn(), 700);
+    return;
+  }
+  player.blockDamage = false; // reset blockDamage at turn start
+  isPlayerTurn = true;
+  // player gains turn energy
+  energy = clamp(energy + TURN_ENERGY_GAIN, 0, MAX_ENERGY);
+  // draw at end of previous player's actions: if hand < START_HAND? we'll ensure draw called on play
+  // but ensure if hand < START_HAND and it's start of turn draw once
+  if(hand.length < START_HAND) {
+    tryDrawToHand();
+  }
+  renderHand(); updateUI();
+  logMsg('Sıra sana - hamle yap veya pas ver.');
+}
+
+/* pass button handler */
+passBtn.addEventListener('click', ()=>{
+  if(!isPlayerTurn || gameOver) return;
+  // give PASS_ENERGY then end turn
+  energy = clamp(energy + PASS_ENERGY, 0, MAX_ENERGY);
+  logMsg('Pas verdin — +' + PASS_ENERGY + ' enerji.');
+  renderHand(); updateUI();
+  // end turn
+  endPlayerTurn();
+});
+
+/* check if game over */
+function checkGameOver(){
+  if(player.hp <= 0 || ai.hp <= 0){
+    gameOver = true;
+    if(player.hp <= 0 && ai.hp <= 0) logMsg('Berabere!');
+    else if(player.hp <= 0) logMsg('Kaybettin 😢');
+    else logMsg('Kazandın 🎉');
+    restartBtn.style.display = 'inline-block';
+    return true;
+  }
+  return false;
+}
+
+/* restart */
+restartBtn.addEventListener('click', ()=>{
+  // reset
+  player = { hp: START_HP, shield:0 };
+  ai = { hp: START_HP, shield:0, stunned:false };
+  energy = START_ENERGY;
+  hand = [];
+  aiHandCount = START_HAND;
+  isPlayerTurn = Math.random() < 0.6; // randomly who starts
+  gameOver = false;
+  restartBtn.style.display = 'none';
+  initialDraw();
+  updateUI();
+  logMsg(isPlayerTurn ? 'Sıra sana!' : 'AI başlıyor...');
+  if(!isPlayerTurn) setTimeout(()=> aiTurn(), 800);
+});
+
+/* quick log */
+function logMsg(txt){ log.innerText = txt; }
+
+/* initial setup */
+function startGame(){
+  player = { hp: START_HP, shield:0 };
+  ai = { hp: START_HP, shield:0, stunned:false };
+  energy = START_ENERGY;
+  aiHandCount = START_HAND;
+  isPlayerTurn = true;
+  gameOver = false;
+  initialDraw();
+  updateUI();
+  logMsg('Oyun başladı — Sıra sana.');
+}
+startGame();
+</script>
+</body>
+</html>

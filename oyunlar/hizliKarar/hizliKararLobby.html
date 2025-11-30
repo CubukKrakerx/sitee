@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hızlı Karar Lobi</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #1d1d1d, #111);
+      font-family: Arial, sans-serif;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .info {
+      margin-bottom: 50px;
+      font-size: 1.2rem;
+      max-width: 500px;
+    }
+
+    #startBtn {
+      padding: 20px 50px;
+      font-size: 1.5rem;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      background: #34c759;
+      color: #fff;
+      transition: 0.2s;
+    }
+
+    #startBtn:hover {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="info">
+🎯 Dikkatini topla ve hızlı karar ver! <br>
+Yanlış basarsan kaybedersin, doğru basarsan puan kazanırsın. <br>
+Sürprizlerle karşılaşabilirsin, hazır mısın? <br>
+
+<font size="2" color="red">Eğer oyun sana basma diyorsa rasgele butona bas</font>
+  </div>
+
+  <button id="startBtn">Başla</button>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    startBtn.addEventListener("click", () => {
+      window.location.href = "hizliKarar.html";
+    });
+  </script>
+</body>
+</html>

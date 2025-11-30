@@ -20,12 +20,13 @@ import {
 // 🔧 Firebase config
 // ----------------------------
 const firebaseConfig = {
-  apiKey: "AIzaSyBqDkByV-2mdZOSP98kvTps5Yyhcw52ypM",
-  authDomain: "pleahunt.firebaseapp.com",
-  projectId: "pleahunt",
-  storageBucket: "pleahunt.firebasestorage.app",
-  messagingSenderId: "760890872647",
-  appId: "1:760890872647:web:1684673d65f8282ffe7262"
+  apiKey: "API_KEY",
+  authDomain: "authDomain",
+  projectId: "projectId",
+  storageBucket: "storageBucket",
+  messagingSenderId: "messagingSenderId",
+  appId: "appId",
+  measurementId: "measurementId"
 };
 
 // ----------------------------
@@ -148,10 +149,15 @@ if (userEmail) {
             if (docSnap2.exists()) {
               const data = docSnap2.data();
               if (data.lastNameUpdate) {
-                const last = data.lastNameUpdate.toDate();
+                // data.lastNameUpdate may be a Firestore Timestamp, string, or Date
+                const raw = data.lastNameUpdate;
+                let last = null;
+                if (raw && typeof raw === 'object' && typeof raw.toDate === 'function') last = raw.toDate();
+                else if (typeof raw === 'string') last = new Date(raw);
+                else if (raw instanceof Date) last = raw;
                 const now = new Date();
                 const oneWeek = 7 * 24 * 60 * 60 * 1000; // haftada 1
-                if (now - last < oneWeek) {
+                if (last && (now - last < oneWeek)) {
                   canUpdate = false;
                   alert("İsminizi haftada sadece 1 kez değiştirebilirsiniz!");
                 }
@@ -168,7 +174,7 @@ if (userEmail) {
         }
 
       } else {
-        console.log("Kullanıcı verisi bulunamadı.");
+        if (window.DEBUG) console.debug("Kullanıcı verisi bulunamadı.");
       }
 
     } else {

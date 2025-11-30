@@ -280,8 +280,14 @@ async function fetchAndShowGameStats(targetUid, gameKey, ownerLabel = null) {
         const data = snap.exists() ? snap.data() : {};
         const arr = Array.isArray(data[meta.field]) ? data[meta.field].slice() : [];
         if (arr.length === 0) {
+            const msgWrap = document.createElement('div');
+            msgWrap.className = 'empty-friends';
+            // Use textContent to avoid injecting user-provided ownerLabel as HTML
             const ownerText = ownerLabel ? ` — ${ownerLabel}` : '';
-            statsContainer.innerHTML = `<div class="empty-friends">Henüz ${meta.label}${ownerText} için oyun kaydı yok.</div>`;
+            msgWrap.textContent = `Henüz ${meta.label}${ownerText} için oyun kaydı yok.`;
+            // clear previous content then append
+            statsContainer.innerHTML = '';
+            statsContainer.appendChild(msgWrap);
             return;
         }
         // sort by timestamp desc
@@ -293,19 +299,65 @@ async function fetchAndShowGameStats(targetUid, gameKey, ownerLabel = null) {
         const avg = (scores.reduce((s,v)=>s+v,0)/scores.length).toFixed(2);
 
     // header (compact) + top summary + recent list
-    const ownerDisplay = ownerLabel ? `<div style=\"color:#ccc;margin-bottom:6px;font-size:0.95rem;\">Kullanıcı: ${ownerLabel}</div>` : '';
-    let html = `<div style="margin-bottom:10px;color:#fff;"><div style=\"font-weight:700;color:#fff;margin-bottom:6px;\">Oyun: ${meta.label}</div>${ownerDisplay}<div style=\"margin-bottom:10px;color:#fff;\"><strong>Toplam oyun:</strong> ${scores.length} &nbsp; <strong>En iyi:</strong> ${best} &nbsp; <strong>Ortalama:</strong> ${avg}</div></div>`;
-        html += '<div style="max-height:320px;overflow:auto;padding-right:6px;">';
-        const limit = 50;
-        const list = arr.slice(0, limit);
-        html += '<ol style="padding-left:18px;margin:0;color:#ddd;">';
-        for (let e of list) {
-            const at = e.at ? new Date(e.at).toLocaleString('tr-TR') : '-';
-            const sc = Number(e.score) || 0;
-            html += `<li style="margin-bottom:6px;color:#ddd;">${at} — <strong style="color:#fff;">${sc}</strong></li>`;
-        }
-        html += '</ol></div>';
-        statsContainer.innerHTML = html;
+    statsContainer.innerHTML = ''; // clear first
+
+    const headerWrap = document.createElement('div');
+    headerWrap.style.marginBottom = '10px';
+    headerWrap.style.color = '#fff';
+
+    const titleEl = document.createElement('div');
+    titleEl.style.fontWeight = '700';
+    titleEl.style.color = '#fff';
+    titleEl.style.marginBottom = '6px';
+    titleEl.textContent = `Oyun: ${meta.label}`;
+    headerWrap.appendChild(titleEl);
+
+    if (ownerLabel) {
+        const ownerDisplayEl = document.createElement('div');
+        ownerDisplayEl.style.color = '#ccc';
+        ownerDisplayEl.style.marginBottom = '6px';
+        ownerDisplayEl.style.fontSize = '0.95rem';
+        ownerDisplayEl.textContent = `Kullanıcı: ${ownerLabel}`; // textContent escapes
+        headerWrap.appendChild(ownerDisplayEl);
+    }
+
+    const summaryEl = document.createElement('div');
+    summaryEl.style.marginBottom = '10px';
+    summaryEl.style.color = '#fff';
+    summaryEl.innerHTML = `<strong>Toplam oyun:</strong> ${scores.length} &nbsp; <strong>En iyi:</strong> ${best} &nbsp; <strong>Ortalama:</strong> ${avg}`; // these are numbers/controlled values
+    headerWrap.appendChild(summaryEl);
+
+    statsContainer.appendChild(headerWrap);
+
+    const listWrap = document.createElement('div');
+    listWrap.style.maxHeight = '320px';
+    listWrap.style.overflow = 'auto';
+    listWrap.style.paddingRight = '6px';
+
+    const ol = document.createElement('ol');
+    ol.style.paddingLeft = '18px';
+    ol.style.margin = '0';
+    ol.style.color = '#ddd';
+
+    const limit = 50;
+    const list = arr.slice(0, limit);
+    for (let e of list) {
+        const li = document.createElement('li');
+        li.style.marginBottom = '6px';
+        li.style.color = '#ddd';
+        const at = e.at ? new Date(e.at).toLocaleString('tr-TR') : '-';
+        const sc = Number(e.score) || 0;
+        // create text nodes so any user-provided data is escaped
+        li.textContent = `${at} — `;
+        const strong = document.createElement('strong');
+        strong.style.color = '#fff';
+        strong.textContent = sc.toString();
+        li.appendChild(strong);
+        ol.appendChild(li);
+    }
+
+    listWrap.appendChild(ol);
+    statsContainer.appendChild(listWrap);
     } catch (err) {
         console.error(err);
         statsContainer.innerHTML = '<div class="empty-friends">İstatistikler yüklenirken hata oluştu.</div>';
@@ -502,7 +554,29 @@ onAuthStateChanged(auth, async (user) => {
             for (const it of MARKET_ITEMS) {
                 const card = document.createElement('div');
                 card.style.cssText = 'background:#333;padding:10px;border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:8px;';
-                card.innerHTML = `<img src="${it.image}" alt="${it.title}" style="width:84px;height:84px;border-radius:8px;object-fit:cover;border:2px solid rgba(255,255,255,0.04)"><div style="color:#fff;font-weight:700">${it.title}</div><div style="color:#ffd24a;font-weight:700">${it.price} ₵</div>`;
+                // Build card content safely using DOM APIs (avoid innerHTML with untrusted text)
+                const img = document.createElement('img');
+                img.src = it.image;
+                img.alt = it.title || 'item';
+                img.style.width = '84px';
+                img.style.height = '84px';
+                img.style.borderRadius = '8px';
+                img.style.objectFit = 'cover';
+                img.style.border = '2px solid rgba(255,255,255,0.04)';
+
+                const titleDiv = document.createElement('div');
+                titleDiv.style.color = '#fff';
+                titleDiv.style.fontWeight = '700';
+                titleDiv.textContent = it.title;
+
+                const priceDiv = document.createElement('div');
+                priceDiv.style.color = '#ffd24a';
+                priceDiv.style.fontWeight = '700';
+                priceDiv.textContent = `${it.price} ₵`;
+
+                card.appendChild(img);
+                card.appendChild(titleDiv);
+                card.appendChild(priceDiv);
                 const btn = document.createElement('button');
                 btn.style.cssText = 'padding:6px 10px;border-radius:8px;border:none;cursor:pointer;font-weight:700;background:#2ecc71;color:#fff';
                 // special handling for daily10 (can be claimed once per 24h)

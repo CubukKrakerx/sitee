@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Galaksi Clicker — Uzay Teması</title>
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+  // Firebase config - REPLACE WITH YOUR OWN CONFIG
+  // To set up Firebase:
+  // 1. Go to https://console.firebase.google.com/
+  // 2. Create a new project or select existing.
+  // 3. Enable Firestore Database.
+  // 4. Go to Project Settings > General > Your apps > Add Web App.
+  // 5. Copy the config below and replace the placeholders.
+  // 6. In Firestore Rules, set: allow read, write: if true; (for testing, but secure for production)
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let userId = null;
+
+  // Sign in anonymously
+  signInAnonymously(auth).catch((error) => {
+    console.error("Anonymous auth failed:", error);
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      userId = user.uid;
+      loadGameData(); // Load from Firestore if available
+    }
+  });
+
+  // Load from localStorage on page load, regardless of Firebase
+  loadGameData();
+
+  // Load game data from Firestore or localStorage
+  async function loadGameData() {
+    let data = null;
+    if (userId) {
+      try {
+        const docRef = doc(db, "galaksiClicker", userId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          data = docSnap.data();
+        }
+      } catch (error) {
+        console.error("Firebase load failed, using localStorage:", error);
+      }
+    }
+    if (!data) {
+      const localData = localStorage.getItem("galaksiClicker");
+      if (localData) {
+        try {
+          const parsed = JSON.parse(localData);
+          // Basic validation / normalization
+          data = {
+            GP: Number(parsed.GP) || 0,
+            clickPower: Number(parsed.clickPower) || 1,
+            autoGP: Number(parsed.autoGP) || 0,
+            planetCount: Math.max(0, Math.min(1000, Number(parsed.planetCount) || 0)),
+            multiplier: Number(parsed.multiplier) || 1,
+            meteorBonus: Number(parsed.meteorBonus) || 0,
+            store: (parsed && parsed.store && typeof parsed.store === 'object') ? parsed.store : store,
+            lastTick: Number(parsed.lastTick) || Date.now()
+          };
+        } catch (e) {
+          console.error('Invalid localStorage data for galaksiClicker, ignoring', e);
+          data = null;
+        }
+      }
+    }
+    if (data) {
+      GP = data.GP || 0;
+      clickPower = data.clickPower || 1;
+      autoGP = data.autoGP || 0;
+      planetCount = data.planetCount || 0;
+      multiplier = data.multiplier || 1;
+      meteorBonus = data.meteorBonus || 0;
+      Object.assign(store, data.store || store);
+      lastTick = data.lastTick || Date.now();
+      // Recreate planets
+      for (let i = 1; i <= planetCount; i++) {
+        planets.push(createPlanet(i));
+      }
+      updateUI();
+    }
+  }
+
+  // Save game data to Firestore and localStorage
+  async function saveGameData() {
+    const data = {
+      GP,
+      clickPower,
+      autoGP,
+      planetCount,
+      multiplier,
+      meteorBonus,
+      store,
+      lastTick
+    };
+    // Save to localStorage always
+    localStorage.setItem("galaksiClicker", JSON.stringify(data));
+    // Save to Firestore if available
+    if (userId) {
+      try {
+        const docRef = doc(db, "galaksiClicker", userId);
+        await setDoc(docRef, data);
+      } catch (error) {
+        console.error("Firebase save failed:", error);
+      }
+    }
+  }
+
+  window.saveGameData = saveGameData;
+</script>
+<style>
+  :root{
+    --bg1:#0a0a23; --bg2:#1a1a3a; --accent:#ffd700;
+    --panel-bg:rgba(30,40,70,0.92);
+    --panel-border:rgba(255,255,255,0.08);
+    --shop-bg:#0e1830;
+    --shop-shadow:0 16px 48px 0 #000b;
+    --btn-grad:linear-gradient(180deg,#2b8fff,#0056cc);
+    --btn-grad-hover:linear-gradient(180deg,#4faaff,#1b7fff);
+    --card-bg:rgba(255,255,255,0.04);
+    --card-bg-hover:rgba(255,255,255,0.09);
+  }
+  html,body{
+    height:100%;margin:0;
+    font-family:'Inter',Arial,Helvetica,sans-serif;
+    background:linear-gradient(180deg,var(--bg1),var(--bg2));
+    color:#eef;overflow:hidden;
+  }
+  /* Animated starry background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image:
+      radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+      radial-gradient(2px 2px at 40px 70px, #fff, transparent),
+      radial-gradient(1px 1px at 90px 40px, #eee, transparent),
+      radial-gradient(1px 1px at 130px 80px, #fff, transparent),
+      radial-gradient(2px 2px at 160px 30px, #eee, transparent);
+    background-repeat: repeat;
+    background-size: 200px 100px;
+    animation: twinkle 4s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: -1;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.3; }
+    100% { opacity: 0.8; }
+  }
+  .app{
+    width:100%;height:100%;
+    display:flex;flex-direction:column;align-items:center;gap:20px;
+    padding:20px;box-sizing:border-box;
+    background:rgba(0,0,0,0.04);
+  }
+  .left-panel{
+    width:420px;max-width:96vw;min-width:320px;
+    background:var(--panel-bg);
+    border-radius:18px;
+    padding:22px 18px 18px 18px;
+    box-shadow:0 8px 32px #000a, 0 1.5px 0 var(--panel-border);
+    border:1.5px solid var(--panel-border);
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+    transition: box-shadow 0.3s;
+  }
+  .left-panel:hover {
+    box-shadow:0 12px 40px #000c, 0 2px 0 var(--panel-border);
+  }
+  .title{
+    font-size:22px;font-weight:700;display:flex;gap:10px;align-items:center;
+    letter-spacing:0.5px;
+    color:#ffe066;
+    text-shadow:0 2px 8px #000a;
+  }
+  .gp-counter{
+    font-size:20px;color:var(--accent);font-weight:800;
+    text-shadow:0 1px 8px #ffd70044,0 1px 0 #000a;
+    letter-spacing:0.5px;
+  }
+  .star-wrap{
+    position:relative;width:300px;height:300px;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:8px;
+  }
+  .star-btn{
+    width:160px;height:160px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, #fffbe8, #ffd54f 40%, #ffb300 70%, #e6a500 100%);
+    border:6px solid #ffe066;
+    box-shadow:0 12px 40px rgba(255,200,50,0.12),inset 0 6px 20px rgba(255,255,255,0.15),0 0 20px rgba(255,215,0,0.5);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:22px;font-weight:700;color:#2b1a00;
+    user-select:none; transition: all 0.25s cubic-bezier(.4,2,.3,1);
+  }
+  .star-btn:hover {
+    transform: scale(1.05);
+    filter: brightness(1.08) drop-shadow(0 0 16px #ffd700cc);
+    box-shadow:0 16px 50px rgba(255,200,50,0.2),inset 0 6px 20px rgba(255,255,255,0.2),0 0 30px rgba(255,215,0,0.8);
+  }
+  .star-hit { transform: scale(0.96); transition: transform 80ms ease; }
+  .small-gp {
+    position:absolute; color:#fff6c8; font-weight:800; text-shadow:0 2px 6px rgba(0,0,0,0.7);
+    pointer-events:none; font-size:14px;
+    animation: floatUp 900ms ease-out forwards;
+  }
+  @keyframes floatUp { from{opacity:1; transform:translateY(0) scale(1)} to{opacity:0; transform:translateY(-80px) scale(1.2)} }
+
+  /* right panel / shop button */
+  .right-panel{
+    width:300px;max-width:34vw;min-width:240px;display:flex;flex-direction:column;gap:12px;
+  }
+  .panel-card{
+    background:var(--card-bg);
+    padding:14px 10px;
+    border-radius:14px;
+    border:1.5px solid var(--panel-border);
+    transition: background 0.3s, box-shadow 0.3s;
+    box-shadow:0 2px 8px #0003;
+    margin-top:8px;
+  }
+  .panel-card:hover { background: var(--card-bg-hover); }
+
+  .row{
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+    font-size:16px;
+  }
+
+  /* Butonlar */
+  .big-btn{
+    padding:13px 20px;
+    border-radius:12px;
+    border:none;
+    background:var(--btn-grad);
+    color:#fff;font-size:17px;font-weight:700;
+    cursor:pointer;
+    box-shadow: 0 4px 16px #0004;
+    transition: all 0.2s;
+    letter-spacing:0.5px;
+  }
+  .big-btn:hover {
+    background:var(--btn-grad-hover);
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 8px 24px #0006;
+  }
+  .small-btn{
+    padding:8px 16px;
+    border-radius:8px;
+    border:none;
+    background:linear-gradient(180deg,#444,#222);
+    color:#fff;font-size:15px;font-weight:600;
+    cursor:pointer;
+    box-shadow: 0 2px 8px #0003;
+    transition: all 0.2s;
+  }
+  .small-btn:hover {
+    background:linear-gradient(180deg,#666,#333);
+    transform: translateY(-1px) scale(1.04);
+    box-shadow: 0 4px 12px #0005;
+  }
+
+  /* shop popup */
+  .modal{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.65);z-index:40;
+    backdrop-filter: blur(2.5px);
+  }
+  .shop{
+    width:96vw;max-width:760px;
+    background:var(--shop-bg);
+    border-radius:18px;
+    padding:22px 18px 18px 18px;
+    border:2px solid var(--panel-border);
+    box-shadow:var(--shop-shadow);
+    color:#eaf6ff;
+    animation: shopPop 0.25s cubic-bezier(.4,2,.3,1);
+  }
+  @keyframes shopPop {
+    0% { transform:scale(0.92); opacity:0.4;}
+    100% { transform:scale(1); opacity:1;}
+  }
+  .shop h2{margin:0 0 8px 0;font-size:22px;}
+  .shop-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:16px;
+    margin-top:10px;
+  }
+  .shop-item{
+    background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01));
+    padding:14px 10px;
+    border-radius:12px;
+    border:1.5px solid var(--panel-border);
+    box-shadow:0 2px 8px #0002;
+    transition: background 0.3s, box-shadow 0.3s;
+    min-height:90px;
+  }
+  .shop-item:hover{
+    background:rgba(255,255,255,0.08);
+    box-shadow:0 6px 18px #0004;
+  }
+  .shop-item h4{
+    margin:0 0 6px 0;
+    font-size:18px;
+    color:#ffe066;
+    text-shadow:0 1px 4px #000a;
+  }
+  .price{
+    color:#ffd700;
+    font-weight:800;
+    font-size:16px;
+    letter-spacing:0.5px;
+    text-shadow:0 1px 4px #ffd70044;
+  }
+
+  /* alien visuals */
+  .alien{
+    position:absolute;width:64px;height:48px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;
+    background:linear-gradient(180deg,#7fffd4,#2ee6b6);box-shadow:0 8px 20px rgba(0,0,0,0.5);cursor:pointer;z-index:35;
+    transform:translate(-50%,-50%);
+    border:2px solid #fff8;
+  }
+
+  /* planet visuals (orbiters) */
+  .orbiter{
+    position:absolute;border-radius:50%;opacity:0.97;pointer-events:none;
+    border:2px solid #fff3;
+    box-shadow:0 0 12px 2px #9ad3ff55;
+    transition:box-shadow 0.3s;
+  }
+  .orbiter:hover{
+    box-shadow:0 0 24px 6px #ffd70099;
+  }
+
+  /* footer */
+  .footer{
+    font-size:13px;
+    color:rgba(255,255,255,0.7);
+    margin-top:10px;
+    text-align:center;
+    letter-spacing:0.2px;
+    text-shadow:0 1px 4px #0004;
+  }
+
+  /* responsive tweaks */
+  @media (max-width:900px){
+    .app{flex-direction:column;gap:14px;padding:8px}
+    .left-panel,.right-panel{width:100%;max-width:none}
+    .shop{padding:12px 2vw;}
+    .shop-grid{gap:8px;}
+    .panel-card{padding:10px 4px;}
+  }
+  @media (max-width:600px){
+    .star-wrap{width:220px;height:220px;}
+    .star-btn{width:110px;height:110px;font-size:16px;}
+    .shop{max-width:99vw;}
+    .shop-item{min-height:70px;}
+    .left-panel{padding:10px 2vw;}
+  }
+</style>
+</head>
+<body>
+  <!-- Açıklama kutusu eklendi -->
+  <div id="introBox" style="position:fixed;top:30px;left:50%;transform:translateX(-50%);background:rgba(10,20,40,0.97);color:#ffd;padding:18px 28px;border-radius:14px;z-index:100;box-shadow:0 4px 24px #0008;max-width:90vw;display:none;">
+    <b>Galaksi Clicker'a Hoş Geldin!</b><br>
+    Yıldızı tıkla, GP kazan ve mağazadan yükseltmeler al.<br>
+    Gezegenler otomatik GP kazandırır. Evreni büyüt, sırları keşfet!<br>
+    <button onclick="document.getElementById('introBox').style.display='none'" style="margin-top:10px;padding:6px 18px;border-radius:8px;background:#ffd700;color:#222;font-weight:700;border:none;cursor:pointer;">Başla</button>
+  </div>
+  <script>
+    // Sayfa ilk açıldığında açıklama kutusunu göster
+    window.addEventListener('DOMContentLoaded',()=>{
+      if(!localStorage.getItem('galaksiClickerIntro')) {
+        document.getElementById('introBox').style.display='block';
+        localStorage.setItem('galaksiClickerIntro','1');
+      }
+    });
+  </script>
+  <div class="app">
+    <div class="left-panel">
+      <div class="title">🌌 <span style="margin-left:6px">Galaksi Clicker</span></div>
+      <div class="gp-counter">GP: <span id="gpCount">0</span></div>
+
+      <div class="star-wrap" id="starWrap">
+        <!-- orbiting planet elements will be inserted here -->
+        <button id="starBtn" class="star-btn">Yıldızı Tıkla</button>
+      </div>
+
+      <div class="row" style="width:100%;justify-content:center;gap:10px">
+        <button id="shopOpen" class="big-btn">Mağaza</button>
+      </div>
+
+      <div class="panel-card" style="width:100%;margin-top:8px">
+        <div class="row"><div>GP / tıklama:</div><div id="clickPowerText">1</div></div>
+        <div class="row"><div>Otomatik GP / s:</div><div id="autoGPText">0</div></div>
+        <div class="row"><div>Toplam Gezegenler:</div><div id="planetCount">0</div></div>
+      </div>
+
+      <div class="footer">Not: Yıldızı tıkla ve GP kazan. Mağazadan yükseltmeler al!</div>
+    </div>
+
+
+  </div>
+
+  <!-- shop modal -->
+  <div id="modal" class="modal">
+    <div class="shop">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>Mağaza</h2>
+        <div><button id="closeShop" class="small-btn">Kapat</button></div>
+      </div>
+
+      <div class="shop-grid" id="shopGrid">
+        <!-- items injected by JS -->
+      </div>
+    </div>
+  </div>
+<script>
+/* ====== Game state ====== */
+let GP = 0;
+let clickPower = 1;           // GP per click
+let autoGP = 0;               // GP per second from orbiters
+let planets = [];             // list of planet objects
+let planetCount = 0;
+let multiplier = 1;
+let meteorBonus = 0;          // extra bonus chance
+let lastTick = Date.now();
+
+/* Prices and levels */
+const store = {
+  clickPower: { level:0, price: 30, maxLevel: 50 },      // Başlangıç: 30, artış: 1.45x
+  planet:    { level:0, price: 80, maxLevel: 50 },       // Başlangıç: 80, artış: 1.6x
+  meteor:    { level:0, price: 150, maxLevel: 50 },      // Başlangıç: 150, artış: 1.7x
+  starburst: { level:0, price: 220, maxLevel: 50 },      // Başlangıç: 220, artış: 1.5x
+  multiplier:{ level:0, price: 400, maxLevel: 50 },      // Başlangıç: 400, artış: 1.8x
+  blackHole: { level:0, price: 2000, maxLevel: 50 },     // Başlangıç: 2000, artış: 2x
+  universeExpansion: { level:0, price: 8000, maxLevel: 20 } // Başlangıç: 8000, artış: 2.2x
+};
+
+/* DOM */
+const gpCountEl = document.getElementById("gpCount");
+const starBtn = document.getElementById("starBtn");
+const starWrap = document.getElementById("starWrap");
+
+const shopOpen = document.getElementById("shopOpen");
+const modal = document.getElementById("modal");
+const closeShop = document.getElementById("closeShop");
+const shopGrid = document.getElementById("shopGrid");
+const clickPowerText = document.getElementById("clickPowerText");
+const autoGPText = document.getElementById("autoGPText");
+const planetCountEl = document.getElementById("planetCount");
+const appDiv = document.querySelector('.app'); // eklendi
+
+/* === helper & UI functions === */
+function format(n){
+  if(n<1000) return Math.floor(n);
+  if(n<1e6) return (n/1e3).toFixed(1)+'K';
+  if(n<1e9) return (n/1e6).toFixed(2)+'M';
+  return (n/1e9).toFixed(2)+'B';
+}
+function updateUI(){
+  gpCountEl.textContent = format(GP);
+  clickPowerText.textContent = format(clickPower*multiplier);
+  autoGPText.textContent = format(autoGP);
+  planetCountEl.textContent = planetCount;
+  renderShop();
+}
+
+/* small floating gp anim */
+function floatGP(x,y,txt){
+  const el = document.createElement('div');
+  el.className='small-gp';
+  el.style.left = (x)+'px';
+  el.style.top = (y)+'px';
+  el.textContent = txt;
+  starWrap.appendChild(el);
+  setTimeout(()=>el.remove(),900);
+}
+
+/* ====== Click handler (star) ====== */
+function onStarClick(ev){
+  // visual press
+  starBtn.classList.add('star-hit');
+  // Ekstra animasyon: kısa bir parlama efekti
+  starBtn.style.boxShadow = '0 0 40px 20px #ffd70088, 0 12px 40px rgba(255,200,50,0.12)';
+  setTimeout(()=>{
+    starBtn.classList.remove('star-hit');
+    starBtn.style.boxShadow = '';
+  }, 180);
+
+  // gain
+  const gained = (clickPower * multiplier);
+  GP += gained;
+  // show float text
+  const rect = starWrap.getBoundingClientRect();
+  const x = rect.width/2 + (Math.random()*80-40);
+  const y = rect.height/2 + (Math.random()*80-40);
+  floatGP(x,y,'+'+format(gained));
+
+
+  updateUI();
+}
+
+/* ====== Auto GP tick ====== */
+function tick(){
+  const now = Date.now();
+  const diff = now - lastTick;
+  if(diff >= 1000){
+    // add autoGP per second
+    GP += autoGP * multiplier * Math.floor(diff/1000);
+    lastTick = now;
+    updateUI();
+    // Auto-save every 10 seconds
+    if (Math.floor(now / 10000) !== Math.floor(lastTick / 10000)) {
+      saveGameData();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ====== Shop logic & exponential price scaling ====== */
+function buy(key){
+  const item = store[key];
+  if(!item) return;
+  if(item.level >= item.maxLevel) { alert('Bu yükseltme maksimum seviyeye ulaştı!'); return; }
+  if(GP < item.price) { alert('Yetersiz GP'); return; }
+  GP -= item.price;
+  item.level++;
+  // price scaling
+  if(key === 'blackHole'){
+    item.price = Math.floor(2000 * Math.pow(2, item.level));
+  } else if(key === 'universeExpansion'){
+    item.price = Math.floor(8000 * Math.pow(2.2, item.level));
+  } else if(key === 'clickPower'){
+    item.price = Math.ceil(item.price * 1.45);
+  } else if(key === 'planet'){
+    item.price = Math.ceil(item.price * 1.6);
+  } else if(key === 'meteor'){
+    item.price = Math.ceil(item.price * 1.7);
+  } else if(key === 'starburst'){
+    item.price = Math.ceil(item.price * 1.5);
+  } else if(key === 'multiplier'){
+    item.price = Math.ceil(item.price * 1.8);
+  }
+  applyUpgrade(key);
+  updateUI();
+  saveGameData();
+}
+
+function applyUpgrade(key){
+  if(key === 'clickPower'){
+    // Galaxy Vuruşu: increases clickPower exponentially per level
+    // base progression: 1 -> 2 -> 4 -> 8 ...
+    clickPower = Math.pow(2, store.clickPower.level - 1);
+  } else if(key === 'planet'){
+    // buy one planet (initial) or upgrade planets (increase autoGP)
+    planetCount++;
+    planets.push(createPlanet(planetCount));
+    // every planet initially gives +1 GP/s, upgrades could increase this further via repeated buys
+    autoGP = planetCount * (1 + Math.floor((store.planet.level-1)/1));
+    // Otomatik GP artışı animasyonu
+    autoGPText.style.transition = 'color 0.3s';
+    autoGPText.style.color = '#ffd700';
+    setTimeout(()=>{autoGPText.style.color='#eef';}, 600);
+  } else if(key === 'meteor'){
+    meteorBonus += 0.02; // increase chance of meteor bonus
+  } else if(key === 'starburst'){
+    // cosmetic + small passive
+    GP += 10 * store.starburst.level;
+  } else if(key === 'multiplier'){
+    multiplier = 1 + store.multiplier.level * 0.5;
+  } else if(key === 'blackHole'){
+    // Kara Delik: büyük çarpan artışı, her seviye +1 çarpan
+    multiplier += 1;
+  } else if(key === 'universeExpansion'){
+    // Evren Genişletme: çarpan +0.5, hikaye mesajları ve görsel efektler 20 seviyeye kadar
+    multiplier += 0.5;
+    const level = store.universeExpansion.level;
+    if(level === 1){
+      commandFlash("Evren genişliyor... Yeni yıldızlar doğuyor!");
+      document.body.style.backgroundImage += ', radial-gradient(3px 3px at 50% 20%, #fff, transparent)';
+    } else if(level === 2){
+      commandFlash("Gezegenler oluşuyor... Hayatın tohumları atılıyor!");
+      for(let i=0; i<2; i++) planets.push(createPlanet(planetCount + i + 1));
+      planetCount += 2;
+      autoGP += 2;
+    } else if(level === 3){
+      commandFlash("Meteor yağmuru başlıyor... Evren canlılaşıyor!");
+      setInterval(spawnMeteor, 5000);
+    } else if(level === 4){
+      commandFlash("Kara delikler beliriyor... Zaman ve uzay bükülüyor!");
+      const bh = document.createElement('div');
+      bh.className = 'orbiter';
+      bh.style.width = '50px';
+      bh.style.height = '50px';
+      bh.style.background = 'radial-gradient(circle, #000, #333)';
+      bh.style.left = '125px';
+      bh.style.top = '125px';
+      starWrap.appendChild(bh);
+    } else if(level === 5){
+      commandFlash("İnsanoğlu evreni keşfederken, aslında evrenin bir parçası olduğunu unutuyor. Sonsuzlukta kaybolan bir damla gibi, ama o damla evreni şekillendiriyor.");
+      document.body.style.background = 'linear-gradient(180deg, #000, #001122)';
+      document.body.style.backgroundImage = 'radial-gradient(4px 4px at 20px 30px, #fff, transparent), radial-gradient(4px 4px at 40px 70px, #eee, transparent)';
+    } else if(level === 6){
+      commandFlash("Galaksiler bir araya geliyor... Büyük patlama sonrası kozmik dans!");
+      document.body.style.backgroundImage += ', radial-gradient(5px 5px at 70% 30%, #ff6b6b, transparent)';
+    } else if(level === 7){
+      commandFlash("Yeni gezegen sistemleri oluşuyor... Evren çeşitleniyor!");
+      for(let i=0; i<3; i++) planets.push(createPlanet(planetCount + i + 1));
+      planetCount += 3;
+      autoGP += 3;
+    } else if(level === 8){
+      commandFlash("Kara delik ağı genişliyor... Evrenin dokusu değişiyor!");
+      const bh2 = document.createElement('div');
+      bh2.className = 'orbiter';
+      bh2.style.width = '60px';
+      bh2.style.height = '60px';
+      bh2.style.background = 'radial-gradient(circle, #000, #222)';
+      bh2.style.left = '200px';
+      bh2.style.top = '100px';
+      starWrap.appendChild(bh2);
+    } else if(level === 9){
+      commandFlash("Nebulalar parlıyor... Renkli gaz bulutları evreni süslüyor!");
+      document.body.style.backgroundImage += ', radial-gradient(40px 40px at 80% 50%, rgba(255,0,150,0.1), transparent)';
+    } else if(level === 10){
+      commandFlash("Evrenin sınırları genişliyor... Sonsuzluk çağrısı!");
+      document.body.style.background = 'linear-gradient(180deg, #000, #000033)';
+      document.body.style.backgroundImage += ', radial-gradient(6px 6px at 10px 50px, #fff, transparent)';
+    } else if(level === 11){
+      commandFlash("Yeni yıldız kümeleri doğuyor... Işık evreni dolduruyor!");
+      document.body.style.backgroundImage += ', radial-gradient(4px 4px at 30% 70%, #ffd700, transparent)';
+    } else if(level === 12){
+      commandFlash("Gezegenler çoğalıyor... Hayatın yayılması!");
+      for(let i=0; i<4; i++) planets.push(createPlanet(planetCount + i + 1));
+      planetCount += 4;
+      autoGP += 4;
+    } else if(level === 13){
+      commandFlash("Kara delik fırtınası... Evrenin merkezi sallanıyor!");
+      const bh3 = document.createElement('div');
+      bh3.className = 'orbiter';
+      bh3.style.width = '70px';
+      bh3.style.height = '70px';
+      bh3.style.background = 'radial-gradient(circle, #000, #111)';
+      bh3.style.left = '50px';
+      bh3.style.top = '200px';
+      starWrap.appendChild(bh3);
+    } else if(level === 14){
+      commandFlash("Galaksi süperkümesi oluşuyor... Evren birleşiyor!");
+      document.body.style.backgroundImage += ', radial-gradient(50px 50px at 50% 80%, rgba(0,255,255,0.05), transparent)';
+    } else if(level === 15){
+      commandFlash("Evrenin derinlikleri açılıyor... Gizemler ortaya çıkıyor!");
+      document.body.style.background = 'linear-gradient(180deg, #000, #000066)';
+      document.body.style.backgroundImage += ', radial-gradient(7px 7px at 60px 20px, #fff, transparent)';
+    } else if(level === 16){
+      commandFlash("Yeni yıldız patlamaları... Evren enerjiyle dolu!");
+      document.body.style.backgroundImage += ', radial-gradient(5px 5px at 40% 10%, #ff4500, transparent)';
+    } else if(level === 17){
+      commandFlash("Gezegen zinciri uzuyor... Kozmik zincir!");
+      for(let i=0; i<5; i++) planets.push(createPlanet(planetCount + i + 1));
+      planetCount += 5;
+      autoGP += 5;
+    } else if(level === 18){
+      commandFlash("Kara delik ağı yoğunlaşıyor... Evrenin kalbi atıyor!");
+      const bh4 = document.createElement('div');
+      bh4.className = 'orbiter';
+      bh4.style.width = '80px';
+      bh4.style.height = '80px';
+      bh4.style.background = 'radial-gradient(circle, #000, #000)';
+      bh4.style.left = '250px';
+      bh4.style.top = '150px';
+      starWrap.appendChild(bh4);
+    } else if(level === 19){
+      commandFlash("Evrenin son sınırları... Sonsuzluk kapısı!");
+      document.body.style.backgroundImage += ', radial-gradient(60px 60px at 20% 90%, rgba(255,255,0,0.1), transparent)';
+    } else if(level === 20){
+      commandFlash("Evren tamamlandı... Seninle birlikte sonsuzluğa yolculuk!");
+      document.body.style.background = 'linear-gradient(180deg, #000, #000099)';
+      document.body.style.backgroundImage += ', radial-gradient(8px 8px at 80px 80px, #fff, transparent), radial-gradient(6px 6px at 150px 50px, #eee, transparent)';
+    }
+  }
+}
+
+/* render shop UI */
+function renderShop(){
+  function makeBuyNode(key, item) {
+    const wrap = document.createElement('div');
+    wrap.style.marginTop = '8px';
+    if (item.level >= item.maxLevel) {
+      const span = document.createElement('span');
+      span.className = 'price';
+      span.style.color = '#ff6b6b';
+      span.style.fontWeight = '900';
+      span.textContent = 'MAX';
+      wrap.appendChild(span);
+      return wrap;
+    }
+
+    const priceSpan = document.createElement('span');
+    priceSpan.className = 'price';
+    priceSpan.textContent = `${format(item.price)} GP`;
+
+    const btn = document.createElement('button');
+    btn.className = 'small-btn';
+    btn.style.cssText = 'float:right';
+    btn.textContent = 'Satın';
+    btn.addEventListener('click', () => buy(key));
+
+    wrap.appendChild(priceSpan);
+    wrap.appendChild(btn);
+    return wrap;
+  }
+
+  // Build shop items safely
+  shopGrid.innerHTML = '';
+  const shopItems = [
+    { key: 'clickPower', title: '👊 Galaxy Vuruşu', desc: `Her tıklamada fazla GP (seviye ${format(store.clickPower.level)})` },
+    { key: 'planet', title: '🌍 Gezegen', desc: `Yıldızın etrafında dolaşan gezegenler (otomatik GP) (s: ${format(planetCount)})` },
+    { key: 'meteor', title: '☄️ Mini Meteor', desc: `Rastgele meteorlar gelir, tıklarsan bonus GP alırsın. (s: ${format(store.meteor.level)})` },
+    { key: 'starburst', title: '💥 Yıldız Patlaması', desc: 'Görsel efekt ve küçük GP bonusu' },
+    { key: 'multiplier', title: '🌌 Galaksi Çarpanı', desc: `Tıklama / otomatik GP'yi yükselten çarpan (s: ${format(store.multiplier.level)})` },
+    { key: 'blackHole', title: '🕳️ Kara Delik', desc: `Büyük çarpan artışı, her seviye +1 çarpan (s: ${format(store.blackHole.level)})` },
+    { key: 'universeExpansion', title: '🌌 Evren Genişletme', desc: `Çarpan ve hikaye artışı, <b>her seviye fiyatı 2.5x artar</b> (seviye: ${format(store.universeExpansion.level)})` }
+  ];
+
+  shopItems.forEach(itm => {
+    const itemNode = document.createElement('div');
+    itemNode.className = 'shop-item';
+    const h4 = document.createElement('h4');
+    h4.textContent = itm.title;
+    const d = document.createElement('div');
+    d.innerHTML = itm.desc; // innerHTML ile <b> etiketi desteklenir
+    itemNode.appendChild(h4);
+    itemNode.appendChild(d);
+    itemNode.appendChild(makeBuyNode(itm.key, store[itm.key]));
+    shopGrid.appendChild(itemNode);
+  });
+}
+
+/* ====== Planets: simple orbiting visuals + autoGP handled by autoGP variable ====== */
+function createPlanet(i){
+  const el = document.createElement('div');
+  el.className = 'orbiter';
+  const size = 18 + Math.min(20, i*6);
+  el.style.width = size + 'px';
+  el.style.height = size + 'px';
+  el.style.background = `radial-gradient(circle at 30% 30%, #fff, #9ad3ff)`;
+  // position on orbit ring
+  const angle = Math.random()*Math.PI*2;
+  const radius = 100 + (i*14);
+  el.style.left = (150 + Math.cos(angle)*radius) + 'px';
+  el.style.top = (150 + Math.sin(angle)*radius) + 'px';
+  starWrap.appendChild(el);
+  // simple floating animation
+  el.style.transition = 'transform 3s linear';
+  setInterval(()=>{
+    const a = Math.random()*Math.PI*2;
+    el.style.transform = `translate(${Math.cos(a)*6}px, ${Math.sin(a)*6}px)`;
+  }, 1500 + Math.random()*1000);
+  return el;
+}
+
+/* ====== Meteor (bonus clickable spawn) ====== */
+function spawnMeteor(){
+  // meteor appears near edge of starWrap
+  const el = document.createElement('div');
+  el.className = 'alien'; // reuse visual class
+  el.style.background = 'linear-gradient(180deg,#ff9f1c,#ff6b00)';
+  el.textContent = '☄️';
+  document.body.appendChild(el);
+  positionOnEdge(el);
+  // animate toward center
+  const rect = starWrap.getBoundingClientRect();
+  const centerX = rect.left + rect.width/2;
+  const centerY = rect.top + rect.height/2;
+  el.style.transition = 'transform 3s linear, left 3s linear, top 3s linear';
+  setTimeout(()=>{ el.style.left = centerX + 'px'; el.style.top = centerY + 'px';},20);
+
+  function clickMeteor(){
+    GP += 15 + Math.floor(10 * meteorBonus);
+    floatGP(centerX - rect.left, centerY - rect.top, '+' + format(15 + Math.floor(10*meteorBonus)));
+    el.remove(); updateUI();
+  }
+  el.addEventListener('click', clickMeteor);
+  // disappear after 5s
+  setTimeout(()=>{ if(el.parentNode) el.remove(); }, 6000);
+}
+
+
+
+/* position element near random edge */
+function positionOnEdge(el){
+  const side = Math.floor(Math.random()*4);
+  if(side===0){ // top
+    el.style.left = (Math.random()*window.innerWidth) + 'px';
+    el.style.top = '-60px';
+  } else if(side===1){ // right
+    el.style.left = (window.innerWidth+60) + 'px';
+    el.style.top = (Math.random()*window.innerHeight) + 'px';
+  } else if(side===2){ // bottom
+    el.style.left = (Math.random()*window.innerWidth) + 'px';
+    el.style.top = (window.innerHeight+60) + 'px';
+  } else { // left
+    el.style.left = '-60px';
+    el.style.top = (Math.random()*window.innerHeight) + 'px';
+  }
+}
+
+/* command flash (notification near command) */
+function commandFlash(txt){
+  const el = document.createElement('div');
+  el.textContent = txt;
+  el.style.position='absolute'; el.style.left='50%';el.style.top='10%';el.style.transform='translateX(-50%)';
+  el.style.padding='8px 12px';el.style.background='rgba(255,255,255,0.06)';el.style.borderRadius='8px';el.style.color='#ffd';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),1300);
+}
+
+/* ====== Event bindings ====== */
+starBtn.addEventListener('click', onStarClick);
+shopOpen.addEventListener('click', ()=>{
+  modal.style.display='flex';
+  renderShop();
+  if(appDiv) appDiv.style.filter = 'blur(2px) brightness(0.95)';
+});
+closeShop.addEventListener('click', ()=>{
+  modal.style.display='none';
+  if(appDiv) appDiv.style.filter = '';
+});
+
+/* init */
+updateUI();
+renderShop();
+
+/* expose buy to window for in-shop buttons */
+window.buy = buy;
+</script>
+</body>
+</html>

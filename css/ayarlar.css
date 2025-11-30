@@ -224,3 +224,19 @@ body {
 .round-button:hover {
     background-color: #777;
 }
+
+.buton2 {
+    width: 225px;
+    height: 50px;
+    font-weight: bold;
+    border-radius: 12px;
+    border: none;
+    background-color: lightgreen;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+}
+
+.buton2:hover {
+    background-color: orange;
+}
+

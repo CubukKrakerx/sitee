@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Zombie</title>
+  <style>
+    body { margin:0; background:#111; }
+    canvas { display:block; margin:0 auto; background:#222; }
+    #infoBtn {
+      position:fixed; top:20px; right:20px;
+      width:40px; height:40px;
+      border-radius:50%; border:2px solid #666;
+      background: linear-gradient(135deg, #555 0%, #333 100%);
+      color:#fff; font-size:18px; font-weight:bold;
+      cursor:pointer; transition:all 0.3s ease;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      display:flex; align-items:center; justify-content:center;
+    }
+    #infoBtn:hover {
+      background: linear-gradient(135deg, #666 0%, #444 100%);
+      border-color:#888; transform:scale(1.1);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+    #infoBtn:active {
+      transform:scale(0.95);
+    }
+    #marketBtn {
+      position:fixed; top:80px; right:20px;
+      width:40px; height:40px;
+      border-radius:50%; border:2px solid #666;
+      background: linear-gradient(135deg, #555 0%, #333 100%);
+      color:#fff; font-size:18px; font-weight:bold;
+      cursor:pointer; transition:all 0.3s ease;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      display:flex; align-items:center; justify-content:center;
+    }
+    #marketBtn:hover {
+      background: linear-gradient(135deg, #666 0%, #444 100%);
+      border-color:#888; transform:scale(1.1);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+    }
+    #marketBtn:active {
+      transform:scale(0.95);
+    }
+    #popup {
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      background:rgba(0,0,0,0.95);
+      color:#fff; padding:25px;
+      border-radius:15px; width:450px; max-height:80vh;
+      overflow-y:auto; display:none; font-family:sans-serif;
+      border:1px solid #555; box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    }
+    #popup h3 { margin-top:0; }
+    #popup button {
+      margin-top:15px; padding:6px 12px;
+      background:#555; color:#fff; border:none;
+      border-radius:6px; cursor:pointer;
+    }
+    #healthBar {
+      position:fixed; top:140px; left:20px;
+      background:rgba(0,0,0,0.8);
+      color:#fff; padding:10px;
+      border-radius:10px; font-family:sans-serif;
+      font-size:14px; width:250px;
+    }
+    #healthBar h4 { margin:0 0 10px 0; }
+    #healthFill {
+      height:20px; background:#f00; border-radius:10px;
+      transition:width 0.3s ease;
+    }
+    #weaponUI {
+      position:fixed; top:20px; left:20px;
+      background:rgba(0,0,0,0.8);
+      color:#fff; padding:10px;
+      border-radius:10px; font-family:sans-serif;
+      font-size:14px; width:200px;
+    }
+    #weaponUI h4 { margin:0 0 10px 0; }
+    .weapon-item { margin-bottom:5px; }
+    .selected { font-weight:bold; color:#ff0; }
+    #gameOverPopup {
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      background:rgba(0,0,0,0.95);
+      color:#fff; padding:25px;
+      border-radius:15px; width:300px; text-align:center;
+      display:none; font-family:sans-serif;
+      border:1px solid #555; box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    }
+    #gameOverPopup h3 { margin-top:0; color:#f00; }
+    #gameOverPopup p { margin:10px 0; }
+    #gameOverPopup button {
+      margin-top:15px; padding:10px 20px;
+      background:#555; color:#fff; border:none;
+      border-radius:6px; cursor:pointer; font-size:16px;
+    }
+    #gameOverPopup button:hover { background:#777; }
+    #marketPopup {
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      background:rgba(0,0,0,0.95);
+      color:#fff; padding:25px;
+      border-radius:15px; width:400px; text-align:center;
+      display:none; font-family:sans-serif;
+      border:1px solid #555; box-shadow:0 10px 30px rgba(0,0,0,0.5);
+      z-index:1000;
+    }
+    #marketPopup h3 { margin-top:0; }
+    #marketPopup p { margin:10px 0; }
+    #marketPopup button {
+      margin:10px 5px; padding:8px 15px;
+      background:#555; color:#fff; border:none;
+      border-radius:6px; cursor:pointer;
+    }
+    #marketPopup button:hover { background:#777; }
+    .market-item { margin-bottom:10px; }
+  </style>
+</head>
+<body>
+<canvas id="game" width="1000" height="600"></canvas>
+<div id="weaponUI">
+  <h4>Silahlar</h4>
+  <div id="weapons-list"></div>
+</div>
+<div id="healthBar">
+  <h4>Can: <span id="healthText">100/100</span></h4>
+  <div id="healthFill" style="width:100%"></div>
+</div>
+<button id="infoBtn">i</button>
+<button id="marketBtn">M</button>
+<div id="popup">
+  <h3>🎮 Çöp Adam vs Zombiler - Oyun Rehberi</h3>
+  <p><strong>Skor: <span id="popupScore" style="color: yellow;">0</span></strong></p>
+
+  <h4>🎯 Oyun Amacı</h4>
+  <p>Zombilerden kaçın ve onları yok et! Oyuncu beyaz çöp adam, zombiler yeşil renkli. Canın 0'a düştüğünde oyun biter!</p>
+
+  <h4>⚔️ Silahlar</h4>
+  <ul>
+    <li><b>1 - Bıçak:</b> Yakın menzil (50px yarıçap), hız artışı (+50%), anında hasar</li>
+    <li><b>2 - Tabanca:</b> Tek hedef sarı mermiler, sınırsız atış</li>
+    <li><b>3 - Füze:</b> Turuncu mermiler, alan hasarı (65px yarıçap), 5 saniye bekleme süresi</li>
+  </ul>
+
+  <h4>🎮 Kontroller</h4>
+  <ul>
+    <li><b>Hareket:</b> WASD tuşları veya Ok tuşları</li>
+    <li><b>Silah Değiştirme:</b> 1, 2, 3 rakam tuşları</li>
+    <li><b>Ateş:</b> Mouse sol tık (hedef yönüne ateş eder)</li>
+    <li><b>Bilgi:</b> ESC tuşu veya sağ üstteki "i" butonu</li>
+    <li><b>Market:</b> E tuşu veya sağ üstteki "M" butonu</li>
+  </ul>
+
+  <h4>💡 İpuçları</h4>
+  <ul>
+    <li>Zombiler sürekli spawn olur, aktif kal!</li>
+    <li>Bıçak ile hızlanarak kaçabilirsin</li>
+    <li>Füze cooldown sırasında dikkatli ol</li>
+    <li>Silah UI'si sol üstte mevcut silahı gösterir</li>
+  </ul>
+
+  <button id="closePopup">Oyuna Dön</button>
+</div>
+<div id="marketPopup">
+  <h3>🛒 Market</h3>
+  <p>Coinleriniz: <span id="coinDisplay">0</span></p>
+  <div id="marketItems">
+    <div class="market-item">
+      <span>Küçük Sağlık Kiti (20 Can) - 20 Coin</span>
+      <button id="buySmallHealth">Satın Al</button>
+    </div>
+    <div class="market-item">
+      <span>Büyük Sağlık Kiti (40 Can) - 40 Coin</span>
+      <button id="buyBigHealth">Satın Al</button>
+    </div>
+  </div>
+  <button id="closeMarketPopup">Oyuna Dön</button>
+</div>
+<div id="gameOverPopup">
+  <h3>💀 Kaybettin!</h3>
+  <p id="finalScore">Skor: 0</p>
+  <p id="highScore">En Yüksek Skor: 0</p>
+  <button id="playAgainBtn">Tekrar Oyna</button>
+</div>
+<script>
+const canvas=document.getElementById("game"),ctx=canvas.getContext("2d");
+let player={x:500,y:300,size:12,speed:4,anim:0,health:100,maxHealth:100};
+let bullets=[],zombies=[],keys={};
+let currentWeapon="gun",lastRocketTime=0,rocketCooldown=5000;
+let running=true; // oyun durumu
+let lastDamageTime=0,damageCooldown=500; // hasar cooldown'u
+// Safe localStorage helpers for numeric values
+function safeGetIntLS(key, fallback = 0) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null || raw === undefined) return fallback;
+    const n = parseInt(raw);
+    return Number.isNaN(n) ? fallback : n;
+  } catch (e) { return fallback; }
+}
+function safeSetLS(key, value) {
+  try { localStorage.setItem(key, String(value)); } catch(e) { console.error('ls set failed', e); }
+}
+
+let score = 0;
+let highScore = safeGetIntLS('highScore', 0); // skor ve yüksek skor
+let spawnCount=0; // spawn sayacı
+let coins=0; // coinler
+
+function spawnZombie(){
+  if(!running) return; // don't spawn when game is paused
+  let numZombies = 1 + Math.floor(score / 1000); // spawn more zombies as score increases, slower
+  for(let i = 0; i < numZombies; i++){
+    spawnCount++;
+    let side=Math.floor(Math.random()*4),x,y;
+    if(side===0){x=0;y=Math.random()*canvas.height;}
+    if(side===1){x=canvas.width;y=Math.random()*canvas.height;}
+    if(side===2){x=Math.random()*canvas.width;y=0;}
+    if(side===3){x=Math.random()*canvas.width;y=canvas.height;}
+    let fastProb = Math.min(0.3, 0.02 + score / 10000); // increases slower up to 30%
+    let bigProb = Math.min(0.1, 0.05 + score / 20000); // increases slower up to 10%
+    let normalProb = 1 - fastProb - bigProb;
+    let rand = Math.random();
+    if(rand < fastProb){
+      zombies.push({x,y,size:12,speed:3,anim:0,type:"fast"});
+    } else if(rand < fastProb + bigProb){
+      zombies.push({x,y,size:18,speed:0.5,anim:0,health:4,type:"big"});
+    } else {
+      zombies.push({x,y,size:12,speed:1,anim:0});
+    }
+  }
+}
+
+function drawStickman(x,y,color,anim){
+  ctx.strokeStyle=color;
+  ctx.beginPath();
+  ctx.arc(x,y,6,0,Math.PI*2);
+  ctx.moveTo(x,y+6); ctx.lineTo(x,y+20);
+  let armSwing=Math.sin(anim/10)*6;
+  ctx.moveTo(x,y+10); ctx.lineTo(x-8,y+14+armSwing);
+  ctx.moveTo(x,y+10); ctx.lineTo(x+8,y+14-armSwing);
+  let legSwing=Math.cos(anim/10)*6;
+  ctx.moveTo(x,y+20); ctx.lineTo(x-6,y+30+legSwing);
+  ctx.moveTo(x,y+20); ctx.lineTo(x+6,y+30-legSwing);
+  ctx.stroke();
+}
+
+function updateWeaponUI(){
+  const weaponsList = document.getElementById('weapons-list');
+  const weapons = [
+    {key: '1', name: 'Bıçak', type: 'knife'},
+    {key: '2', name: 'Tabanca', type: 'gun'},
+    {key: '3', name: 'Füze', type: 'rocket'}
+  ];
+  // Build weapon list with safe DOM nodes
+  weaponsList.innerHTML = ''; // clear container
+  weapons.forEach(w => {
+    const className = 'weapon-item' + (w.type === currentWeapon ? ' selected' : '');
+    const node = document.createElement('div');
+    node.className = className;
+    let text = `${w.key} - ${w.name}`;
+    if (w.type === 'rocket'){
+      let remaining = Math.max(0, rocketCooldown - (Date.now() - lastRocketTime));
+      if(remaining > 0){ text += ` (Cooldown: ${(remaining/1000).toFixed(1)}s)`; }
+    }
+    node.textContent = text;
+    weaponsList.appendChild(node);
+  });
+}
+
+function updateHealthBar(){
+  const healthText = document.getElementById('healthText');
+  const healthFill = document.getElementById('healthFill');
+  healthText.textContent = `${player.health}/${player.maxHealth}`;
+  const percentage = (player.health / player.maxHealth) * 100;
+  healthFill.style.width = `${percentage}%`;
+  if(percentage < 30) healthFill.style.background = '#f00';
+  else if(percentage < 60) healthFill.style.background = '#ff0';
+  else healthFill.style.background = '#0f0';
+}
+
+function draw(){
+  if(!running) return; // oyun durduysa çizme
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  let speedMultiplier = 1 + score / 3000; // speeds double at 3000 score
+  let playerSpeed = player.speed * speedMultiplier;
+
+  let moving=false;
+  if(keys["ArrowUp"]||keys["w"]){player.y-=playerSpeed;moving=true;}
+  if(keys["ArrowDown"]||keys["s"]){player.y+=playerSpeed;moving=true;}
+  if(keys["ArrowLeft"]||keys["a"]){player.x-=playerSpeed;moving=true;}
+  if(keys["ArrowRight"]||keys["d"]){player.x+=playerSpeed;moving=true;}
+  player.x=Math.max(20,Math.min(canvas.width-20,player.x));
+  player.y=Math.max(20,Math.min(canvas.height-20,player.y));
+  if(moving) player.anim++;
+  drawStickman(player.x,player.y,"white",player.anim);
+
+  bullets.forEach((b,i)=>{
+    ctx.fillStyle=b.type==="rocket"?"orange":"yellow";
+    ctx.beginPath(); ctx.arc(b.x,b.y,b.type==="rocket"?6:3,0,Math.PI*2); ctx.fill();
+    b.x+=b.vx; b.y+=b.vy;
+    let hit = false;
+    zombies.forEach((z,j)=>{
+      if(Math.abs(b.x-z.x)<12 && Math.abs(b.y-z.y)<12){
+        if(b.type==="rocket"){
+          ctx.strokeStyle="red";
+          ctx.beginPath(); ctx.arc(b.x,b.y,65,0,Math.PI*2); ctx.stroke();
+          let killed = zombies.filter(z2=>Math.hypot(z2.x-b.x,z2.y-b.y)>65).length;
+          zombies=zombies.filter(z2=>Math.hypot(z2.x-b.x,z2.y-b.y)>65);
+          score += killed * 10; // her zombi için 10 puan
+          coins += killed * 1; // her zombi için 1 coin
+          hit = true;
+        } else {
+          if(z.type==="big"){
+            z.health -= 1;
+            if(z.health <= 0){
+              zombies.splice(j,1);
+              score += 50; // büyük zombi için 50 puan
+              coins += 5; // büyük zombi için 5 coin
+            }
+          } else if(z.type==="fast"){
+            zombies.splice(j,1);
+            score += 10; // fast zombi için 10 puan
+            coins += 2; // fast zombi için 2 coin
+          } else {
+            zombies.splice(j,1);
+            score += 10; // normal zombi için 10 puan
+            coins += 1; // normal zombi için 1 coin
+          }
+          hit = true;
+        }
+      }
+    });
+    if(hit) bullets.splice(i,1);
+  });
+
+  zombies.forEach(z=>{
+    let color = z.type === "big" ? "darkgreen" : z.type === "fast" ? "red" : "lime";
+    drawStickman(z.x,z.y,color,z.anim);
+    let dx=player.x-z.x,dy=player.y-z.y,dist=Math.sqrt(dx*dx+dy*dy);
+    z.x+=dx/dist*z.speed*speedMultiplier; z.y+=dy/dist*z.speed*speedMultiplier; z.anim++;
+
+    // Zombie hasar kontrolü
+    if(Math.abs(player.x-z.x)<20 && Math.abs(player.y-z.y)<20){
+      let now=Date.now();
+      let cooldown = z.type === "fast" ? 300 : 500; // fast zombies damage faster
+      if(now-lastDamageTime>=cooldown){
+        let damage = z.type === "fast" ? 15 : 10; // fast zombies deal more damage
+        player.health-=damage;
+        lastDamageTime=now;
+        if(player.health<=0){
+          player.health=0;
+          running=false;
+          showGameOver();
+        }
+      }
+    }
+  });
+
+  updateWeaponUI(); // UI'yi güncelle
+  updateHealthBar(); // Can barını güncelle
+
+  // Update popup score if popup is open
+  if(popup.style.display === "block"){
+    document.getElementById("popupScore").textContent = score;
+  }
+}
+
+document.addEventListener("keydown",e=>{
+  keys[e.key]=true;
+  if(e.key==="1"){currentWeapon="knife";player.speed=6;}
+  if(e.key==="2"){currentWeapon="gun";player.speed=4;}
+  if(e.key==="3"){currentWeapon="rocket";player.speed=4;}
+  if(e.key==="e"){marketBtn.click();}
+  if(e.key==="Escape"){infoBtn.click();}
+});
+document.addEventListener("keyup",e=>{keys[e.key]=false;});
+
+canvas.addEventListener("click",e=>{
+  let rect=canvas.getBoundingClientRect();
+  let mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  let dx=mx-player.x,dy=my-player.y,dist=Math.sqrt(dx*dx+dy*dy);
+  if(currentWeapon==="gun"){
+    bullets.push({x:player.x,y:player.y,vx:dx/dist*6,vy:dy/dist*6,type:"bullet"});
+  } else if(currentWeapon==="rocket"){
+    let now=Date.now();
+    if(now-lastRocketTime>=rocketCooldown){
+      bullets.push({x:player.x,y:player.y,vx:dx/dist*4,vy:dy/dist*4,type:"rocket"});
+      lastRocketTime=now;
+    }
+  } else if(currentWeapon==="knife"){
+    ctx.strokeStyle="red";
+    ctx.beginPath(); ctx.arc(player.x,player.y,50,0,Math.PI*2); ctx.stroke();
+    let killed = zombies.length - zombies.filter(z=>Math.hypot(z.x-player.x,z.y-player.y)>50).length;
+    zombies=zombies.filter(z=>Math.hypot(z.x-player.x,z.y-player.y)>50);
+    score += killed * 10; // bıçak ile öldürülen zombiler için puan
+    coins += killed * 1; // bıçak ile öldürülen zombiler için coin
+  }
+});
+
+// Popup kontrolü
+const infoBtn=document.getElementById("infoBtn");
+const popup=document.getElementById("popup");
+const closePopup=document.getElementById("closePopup");
+
+infoBtn.onclick=()=>{
+  if(popup.style.display === "block"){
+    popup.style.display="none";
+  } else {
+    document.getElementById("popupScore").textContent = score;
+    popup.style.display="block";
+    marketPopup.style.display="none";
+  }
+  running = (popup.style.display === "none" && marketPopup.style.display === "none");
+};
+closePopup.onclick=()=>{
+  popup.style.display="none";
+  running = (popup.style.display === "none" && marketPopup.style.display === "none");
+};
+
+// Market Popup kontrolü
+const marketBtn=document.getElementById("marketBtn");
+const marketPopup=document.getElementById("marketPopup");
+const closeMarketPopup=document.getElementById("closeMarketPopup");
+const buySmallHealth=document.getElementById("buySmallHealth");
+const buyBigHealth=document.getElementById("buyBigHealth");
+
+marketBtn.onclick=()=>{
+  if(gameOverPopup.style.display === "block") return; // can't open market during game over
+  if(marketPopup.style.display === "block"){
+    marketPopup.style.display="none";
+  } else {
+    marketPopup.style.display="block";
+    popup.style.display="none";
+    updateCoinDisplay();
+  }
+  running = (popup.style.display === "none" && marketPopup.style.display === "none");
+};
+closeMarketPopup.onclick=()=>{
+  marketPopup.style.display="none";
+  running = (popup.style.display === "none" && marketPopup.style.display === "none");
+};
+
+function updateCoinDisplay(){
+  document.getElementById("coinDisplay").textContent = coins;
+}
+
+buySmallHealth.onclick=()=>{
+  if(coins >= 20){
+    coins -= 20;
+    player.health = Math.min(player.maxHealth, player.health + 20);
+    updateHealthBar();
+    updateCoinDisplay();
+  }
+};
+
+buyBigHealth.onclick=()=>{
+  if(coins >= 40){
+    coins -= 40;
+    player.health = Math.min(player.maxHealth, player.health + 40);
+    updateHealthBar();
+    updateCoinDisplay();
+  }
+};
+
+// Game Over Popup kontrolü
+const gameOverPopup=document.getElementById("gameOverPopup");
+const playAgainBtn=document.getElementById("playAgainBtn");
+
+function showGameOver(){
+  if(score > highScore){
+    highScore = score;
+    safeSetLS('highScore', highScore);
+  }
+  document.getElementById("finalScore").textContent = `Skor: ${score}`;
+  document.getElementById("highScore").textContent = `En Yüksek Skor: ${highScore}`;
+  gameOverPopup.style.display="block";
+}
+
+playAgainBtn.onclick=()=>{
+  // Oyun sıfırlama
+  player={x:500,y:300,size:12,speed:4,anim:0,health:100,maxHealth:100};
+  bullets=[],zombies=[],keys={};
+  currentWeapon="gun",lastRocketTime=0;
+  running=true;
+  lastDamageTime=0;
+  score=0;
+  gameOverPopup.style.display="none";
+  updateHealthBar();
+  updateWeaponUI();
+};
+
+setInterval(draw,30);
+function spawnLoop(){
+  if(running){
+    spawnZombie();
+  }
+  let spawnInterval = Math.max(500, 1500 - score / 10); // spawn faster as score increases, min 500ms
+  setTimeout(spawnLoop, spawnInterval);
+}
+spawnLoop();
+</script>
+</body>
+</html>

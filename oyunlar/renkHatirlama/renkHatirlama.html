@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Işık Sırası Oyunu</title>
+    <meta name="description" content="Pleahunt sitesinde Işık sırası oyununun tadını çıkar.">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824155279412452"
+     crossorigin="anonymous"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            transition: background-color 1s ease;
+        }
+
+        .button {
+            width: 100px;
+            height: 100px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #ccc;
+            transition: background-color 0.3s;
+        }
+
+        .active {
+            background-color: orange;
+        }
+
+        .correct {
+            background-color: green;
+        }
+
+        #message {
+            font-size: 24px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        #restartBtn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            display: none; /* Başlangıçta gizli */
+            cursor: pointer;
+        }
+
+        #level {
+            font-size: 18px;
+        }
+
+        #turnMessage {
+            font-size: 18px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="level">Aşama: 1</div>
+    <div id="turnMessage">Işıklar gösteriliyor...</div>
+    <div id="buttons">
+        <button class="button" data-index="0"></button>
+        <button class="button" data-index="1"></button>
+        <button class="button" data-index="2"></button>
+        <button class="button" data-index="3"></button>
+        <button class="button" data-index="4"></button>
+        <button class="button" data-index="5"></button>
+        <button class="button" data-index="6"></button>
+        <button class="button" data-index="7"></button>
+    </div>
+    <div id="message"></div>
+    <button id="restartBtn">Tekrar Başla</button>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+        // Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqDkByV-2mdZOSP98kvTps5Yyhcw52ypM",
+            authDomain: "pleahunt.firebaseapp.com",
+            projectId: "pleahunt",
+            storageBucket: "pleahunt.firebasestorage.app",
+            messagingSenderId: "760890872647",
+            appId: "1:760890872647:web:1684673d65f8282ffe7262"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        const buttons = document.querySelectorAll('.button');
+        const messageDiv = document.getElementById('message');
+        const levelDiv = document.getElementById('level');
+        const turnMessageDiv = document.getElementById('turnMessage');
+        const restartBtn = document.getElementById('restartBtn');
+
+        let sequence = [];
+        let userSequence = [];
+        let level = 1;
+        const maxLevel = 16;
+        let canClick = false;
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) currentUser = user;
+            else alert("Oyun için giriş yapmalısınız!");
+        });
+
+        function startLevel() {
+            userSequence = [];
+            canClick = false;
+            levelDiv.textContent = `Aşama: ${level}`;
+            messageDiv.style.display = 'none';
+            restartBtn.style.display = 'none'; 
+            turnMessageDiv.textContent = "Işıklar gösteriliyor...";
+            turnMessageDiv.style.display = 'block';
+
+            const newLight = Math.floor(Math.random() * buttons.length);
+            sequence.push(newLight);
+            flashSequence();
+        }
+
+        function flashSequence() {
+            let delay = 0;
+            sequence.forEach((index) => {
+                setTimeout(() => {
+                    buttons[index].classList.add('active');
+                    setTimeout(() => {
+                        buttons[index].classList.remove('active');
+                    }, 500);
+                }, delay);
+                delay += 1000;
+            });
+
+            setTimeout(() => {
+                canClick = true;
+                turnMessageDiv.textContent = "Senin sıran!";
+            }, delay);
+        }
+
+        buttons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (!canClick) return;
+                const userIndex = parseInt(e.target.dataset.index);
+                userSequence.push(userIndex);
+
+                if (userIndex === sequence[userSequence.length - 1]) {
+                    e.target.classList.add('correct');
+                    setTimeout(() => e.target.classList.remove('correct'), 500);
+                } else {
+                    endGame("Kaybettin!", "red");
+                    saveScore(level); // Firestore güncelle
+                    return;
+                }
+
+                if (userSequence.length === sequence.length) {
+                    if (level === maxLevel) {
+                        endGame("Kazandın!", "lightgreen");
+                        saveScore(level);
+                    } else {
+                        level++;
+                        document.body.style.backgroundColor = "lightgreen";
+                        setTimeout(() => {
+                            document.body.style.backgroundColor = "#f0f0f0";
+                        }, 1000);
+                        setTimeout(startLevel, 1000);
+                    }
+                }
+            });
+        });
+
+        function endGame(message, color) {
+            canClick = false;
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            turnMessageDiv.style.display = 'none';
+
+            if (color) document.body.style.backgroundColor = color;
+
+            buttons.forEach(button => button.style.display = 'none');
+            restartBtn.style.display = 'inline-block';
+        }
+
+        restartBtn.addEventListener('click', () => {
+            sequence = [];
+            userSequence = [];
+            level = 1;
+            buttons.forEach(button => button.style.display = 'inline-block');
+            document.body.style.backgroundColor = "#f0f0f0";
+            startLevel();
+        });
+
+        // Firestore'a skor kaydetme
+        async function saveScore(currentLevel) {
+            if (!currentUser) return;
+            const uid = currentUser.uid;
+            const userRef = doc(db, "profiles", uid);
+
+            try {
+                const docSnap = await getDoc(userRef);
+                let bestScore = 0;
+                if (docSnap.exists()) {
+                    bestScore = docSnap.data()?.games?.tutturBakalim?.bestScore || 0;
+                }
+
+                if (currentLevel > bestScore) {
+                    await setDoc(userRef, {
+                        games: {
+                            tutturBakalim: {
+                                bestScore: currentLevel,
+                                lastPlayed: serverTimestamp()
+                            }
+                        }
+                    }, { merge: true });
+                    if (window.DEBUG) console.debug("Yeni yüksek skor kaydedildi:", currentLevel);
+                }
+            } catch (err) {
+                console.error("Skor kaydedilemedi:", err);
+            }
+        }
+
+        // Başlangıç
+        startLevel();
+    </script>
+</body>
+</html>

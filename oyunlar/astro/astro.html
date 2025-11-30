@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Space Invaders — Pixel Art (Final)</title>
+  <style>
+    :root {
+      --bg: #0b1b3e;
+      --fg: #e6f0ff;
+      --accent: #00d1ff;
+      --font: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: radial-gradient(1200px at 50% 30%, #0f274f, var(--bg));
+      color: var(--fg);
+      font-family: var(--font);
+    }
+    .wrap {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100vh;
+      align-items: center;
+      justify-items: center;
+      gap: 8px;
+      padding: 12px;
+    }
+    header, footer { text-align: center; opacity: .95; user-select: none; }
+    header h1 { margin: 8px 0 0; font-size: 18px; }
+    header p { margin: 4px 0 0; font-size: 12px; color: #a7c1ff; }
+    .hud {
+      display: flex; gap: 16px; align-items: center; justify-content: center; font-size: 13px;
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 6px 10px;
+    }
+    .hud .badge { padding: 2px 8px; border-radius: 6px; background: rgba(0,209,255,.15); border: 1px solid rgba(0,209,255,.35); }
+    canvas {
+      image-rendering: pixelated; image-rendering: crisp-edges;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, #071530, #0a1a3b 40%, #0b1b3e 100%);
+      box-shadow: 0 0 0 4px rgba(255,255,255,.03) inset, 0 24px 60px rgba(0,0,0,.45), 0 6px 18px rgba(0,0,0,.6);
+    }
+    .controls { display: none; gap: 8px; margin: 8px 0; }
+    .btn {
+      appearance: none; border: 1px solid rgba(255,255,255,.15);
+      background: rgba(255,255,255,.06); color: var(--fg);
+      border-radius: 8px; padding: 8px 12px; font-size: 16px; cursor: pointer; touch-action: none;
+    }
+    .btn:active { transform: translateY(1px); }
+    @media (max-width: 800px) { .controls { display: flex; } header p { font-size: 11px; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Space Invaders — Pixel Art</h1>
+    <p>A/D veya yön tuşlarıyla hareket; Space ile ateş. Mobilde alttaki düğmeleri kullan.</p>
+  </header>
+  <div class="hud">
+    <div class="badge">Skor: <span id="score">0</span></div>
+    <div class="badge">En iyi: <span id="best">0</span></div>
+    <div class="badge">Can: <span id="lives">3</span></div>
+    <div class="badge">Seviye: <span id="level">1</span></div>
+  </div>
+  <canvas id="game" width="360" height="480"></canvas>
+  <div class="controls">
+    <button class="btn" id="left">⟵</button>
+    <button class="btn" id="fire">⦿</button>
+    <button class="btn" id="right">⟶</button>
+  </div>
+  <footer><small>Pixel art sprite matrisleri ile çiziliyor. Paleti ve şekilleri kolayca özelleştir.</small></footer>
+</div>
+
+<script>
+  // Utils
+  const rnd = (min, max) => Math.random() * (max - min) + min;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const now = () => performance.now();
+
+  // Input
+  const keys = new Set();
+  window.addEventListener('keydown', e => keys.add(e.key.toLowerCase()));
+  window.addEventListener('keyup',   e => keys.delete(e.key.toLowerCase()));
+
+  // Touch controls
+  const leftBtn  = document.getElementById('left');
+  const rightBtn = document.getElementById('right');
+  const fireBtn  = document.getElementById('fire');
+  const holdKey = (btn, key) => {
+    let pressed = false;
+    const down = e => { e.preventDefault(); if (!pressed) { pressed = true; keys.add(key); } };
+    const up   = e => { e.preventDefault(); if (pressed) { pressed = false; keys.delete(key); } };
+    ['pointerdown','touchstart','mousedown'].forEach(ev => btn.addEventListener(ev, down, {passive:false}));
+    ['pointerup','pointerleave','touchend','mouseup'].forEach(ev => btn.addEventListener(ev, up, {passive:false}));
+  };
+  holdKey(leftBtn, 'arrowleft');
+  holdKey(rightBtn, 'arrowright');
+  let firePressed = false;
+  ['pointerdown','touchstart','mousedown'].forEach(ev => fireBtn.addEventListener(ev, e => { e.preventDefault(); firePressed = true; }, {passive:false}));
+  ['pointerup','pointerleave','touchend','mouseup'].forEach(ev => fireBtn.addEventListener(ev, e => { e.preventDefault(); firePressed = false; }, {passive:false}));
+
+  // Canvas responsive scaling
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  function fitCanvas() {
+    const maxW = Math.min(window.innerWidth - 24, 520);
+    const scale = clamp(Math.floor(maxW / canvas.width), 1, 3);
+    canvas.style.width = (canvas.width * scale) + 'px';
+    canvas.style.height = (canvas.height * scale) + 'px';
+  }
+  window.addEventListener('resize', fitCanvas);
+  fitCanvas();
+
+  // Palette
+  const PAL = {
+    ship:'#ffffff', laser:'#ffffff',
+    alienA:'#57f287', alienB:'#ffa62b', alienC:'#9b5dfc',
+    bunker:'#4ee1a0', flash:'#00d1ff', star:'#9cc3ff'
+  };
+
+  // Sprites
+  const SPRITES = {
+    ship: { ts:3, w:9, h:7, color:PAL.ship, data:[
+      "000100000","001110000","011111000","111111100","111111100","011111000","001110000",
+    ]},
+    alienG1: { ts:3, w:8, h:8, color:PAL.alienA, data:[
+      "00111100","01111110","11111111","11011011","11111111","00100100","01000010","10000001",
+    ]},
+    alienG2: { ts:3, w:8, h:8, color:PAL.alienA, data:[
+      "00111100","01111110","11111111","11011011","11111111","01000010","00100100","00011000",
+    ]},
+    bunker: { ts:3, w:10, h:6, color:PAL.bunker, data:[
+      "0001111000","0011111100","0111111110","0110110110","0111111110","0011111100",
+    ]},
+    explosion: { ts:3, w:7, h:7, color:PAL.flash, data:[
+      "0010000","0101000","1111100","0111110","0011110","0001100","0001000",
+    ]},
+  };
+  function drawSprite(sp, x, y, color = sp.color) {
+    const ts = sp.ts;
+    ctx.fillStyle = color;
+    for (let r = 0; r < sp.h; r++) {
+      const row = sp.data[r];
+      for (let c = 0; c < sp.w; c++) {
+        if (row[c] === '1') ctx.fillRect(x + c*ts, y + r*ts, ts, ts);
+      }
+    }
+  }
+
+  // HUD
+  const HUD = {
+    scoreEl: document.getElementById('score'),
+    bestEl: document.getElementById('best'),
+    livesEl: document.getElementById('lives'),
+    levelEl: document.getElementById('level'),
+    setScore(v){ this.scoreEl.textContent = v; },
+    setBest(v){ this.bestEl.textContent = v; },
+    setLives(v){ this.livesEl.textContent = v; },
+    setLevel(v){ this.levelEl.textContent = v; },
+  };
+  // safe localStorage helpers
+  function safeGetIntLS(key, fallback = 0) {
+    try { const raw = localStorage.getItem(key); if (raw === null || raw === undefined) return fallback; const n = parseInt(raw); return Number.isNaN(n) ? fallback : n; } catch(e) { return fallback; }
+  }
+  function safeSetLS(key, val) { try { localStorage.setItem(key, String(val)); } catch(e) { console.error('ls set failed', e); } }
+
+  const BEST = safeGetIntLS('best_invaders', 0);
+  HUD.setBest(BEST);
+
+  // Game state
+  const GAME = { running:true, score:0, lives:3, level:1, waveCleared:false };
+  const player = {
+    x: canvas.width/2 - 20,
+    y: canvas.height - 60,
+    w: SPRITES.ship.w * SPRITES.ship.ts,
+    h: SPRITES.ship.h * SPRITES.ship.ts,
+    speed: 140, cooldown: 0, fireDelay: 220,
+  };
+  const shots = [];     // {x,y,v,from,lastY}
+  const aliens = [];    // {x,y,w,h,alive}
+  const bunkers = [];   // {x,y,w,h,mask:Set<string>}
+  const stars = Array.from({length: 90}, () => ({
+    x: rnd(0, canvas.width), y: rnd(0, canvas.height), s: rnd(6, 22), phase: rnd(0, Math.PI*2)
+  }));
+  const explosions = []; // {x,y,t}
+
+  let alienDir = 1;
+  let alienBaseSpeed = 14;
+
+  // Level generation
+  function resetLevel(lvl = GAME.level) {
+    aliens.length = 0; shots.length = 0; bunkers.length = 0; explosions.length = 0;
+
+    const rows = 4 + Math.min(2, lvl);
+    const cols = 8;
+    const offX = 36, offY = 60, gapX = 14, gapY = 12;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const sp = SPRITES.alienG1;
+        const w = sp.w * sp.ts, h = sp.h * sp.ts;
+        aliens.push({
+          x: offX + c * (w + gapX),
+          y: offY + r * (h + gapY),
+          w, h, alive: true
+        });
+      }
+    }
+
+    // Bunkers
+    const bCount = 3;
+    const bw = SPRITES.bunker.w * SPRITES.bunker.ts;
+    const bh = SPRITES.bunker.h * SPRITES.bunker.ts;
+    const spacing = (canvas.width - 2 * 28 - bCount * bw) / (bCount - 1);
+    for (let i = 0; i < bCount; i++) {
+      const x = 28 + i * (bw + spacing);
+      const y = canvas.height - 140;
+      bunkers.push({ x, y, w: bw, h: bh, mask: new Set() });
+    }
+
+    GAME.waveCleared = false;
+    HUD.setLevel(lvl);
+  }
+  resetLevel();
+
+  // Alien movement and fire (with balanced speed)
+  function updateAliens(dt, tms) {
+    let minX = Infinity, maxX = -Infinity, maxY = -Infinity, aliveCount = 0;
+    for (const a of aliens) {
+      if (!a.alive) continue;
+      aliveCount++;
+      minX = Math.min(minX, a.x);
+      maxX = Math.max(maxX, a.x + a.w);
+      maxY = Math.max(maxY, a.y + a.h);
+    }
+    if (aliveCount === 0) { GAME.waveCleared = true; return; }
+
+    const speed = alienBaseSpeed + GAME.level * 3 + Math.max(0, 18 - aliveCount);
+    const dx = alienDir * speed * dt;
+
+    const margin = 12;
+    if (minX + dx < margin || maxX + dx > canvas.width - margin) {
+      alienDir *= -1;
+      for (const a of aliens) if (a.alive) a.y += 8; // smaller descent
+    } else {
+      for (const a of aliens) if (a.alive) a.x += dx;
+    }
+
+    // Random fire from lowest aliens per column
+    if (Math.random() < 0.014 + GAME.level * 0.004) {
+      const byCol = new Map();
+      for (const a of aliens) {
+        if (!a.alive) continue;
+        const col = Math.round(a.x / 18);
+        const prev = byCol.get(col);
+        if (!prev || a.y > prev.y) byCol.set(col, a);
+      }
+      const front = Array.from(byCol.values());
+      if (front.length) {
+        const shooter = front[Math.floor(Math.random() * front.length)];
+        shots.push({ x: shooter.x + shooter.w/2, y: shooter.y + shooter.h, v: 150, from: 'alien', lastY: shooter.y + shooter.h });
+      }
+    }
+
+    // Lose threshold with buffer
+    if (maxY >= player.y - 24) {
+      loseLife();
+    }
+  }
+
+  function loseLife() {
+    GAME.lives--;
+    HUD.setLives(GAME.lives);
+    if (GAME.lives <= 0) {
+      gameOver();
+    } else {
+      alienDir = 1;
+      resetLevel(GAME.level);
+      player.x = canvas.width / 2 - player.w / 2;
+      shots.length = 0;
+    }
+  }
+
+  // Player
+  function updatePlayer(dt) {
+    const left = keys.has('arrowleft') || keys.has('a');
+    const right = keys.has('arrowright') || keys.has('d');
+    const fireKey = keys.has(' ') || keys.has('space') || firePressed;
+
+    if (left && !right) player.x -= player.speed * dt;
+    if (right && !left) player.x += player.speed * dt;
+    player.x = clamp(player.x, 8, canvas.width - player.w - 8);
+
+    player.cooldown = Math.max(0, player.cooldown - dt * 1000);
+    if (fireKey && player.cooldown === 0) {
+      shots.push({ x: player.x + player.w/2, y: player.y, v: -260, from: 'player', lastY: player.y });
+      player.cooldown = player.fireDelay;
+      keys.delete(' '); // prevent desktop space sticking
+    }
+  }
+
+  // Collision helpers (raycast-like to avoid tunneling)
+  function intersectsRectPoint(px, py, rx, ry, rw, rh) {
+    return px >= rx && px <= rx + rw && py >= ry && py <= ry + rh;
+  }
+  function segmentHitsRect(x, y1, y2, rx, ry, rw, rh) {
+    const ymin = Math.min(y1, y2), ymax = Math.max(y1, y2);
+    for (let yy = ymin; yy <= ymax; yy += 3) {
+      if (intersectsRectPoint(x, yy, rx, ry, rw, rh)) return true;
+    }
+    return false;
+  }
+
+  // Shots
+  function updateShots(dt) {
+    for (const s of shots) {
+      const oldY = s.y;
+      s.y += s.v * dt;
+
+      if (s.from === 'player') {
+        for (const a of aliens) {
+          if (!a.alive) continue;
+          if (segmentHitsRect(s.x, oldY, s.y, a.x, a.y, a.w, a.h)) {
+            a.alive = false;
+            spawnExplosion(a.x + a.w/2, a.y + a.h/2);
+            GAME.score += 20;
+            HUD.setScore(GAME.score);
+            s.y = -9999;
+            break;
+          }
+        }
+      }
+      if (s.from === 'alien') {
+        if (segmentHitsRect(s.x, oldY, s.y, player.x, player.y, player.w, player.h)) {
+          spawnExplosion(player.x + player.w/2, player.y);
+          s.y = 9999;
+          loseLife();
+        }
+      }
+      for (const b of bunkers) {
+        if (segmentHitsRect(s.x, oldY, s.y, b.x, b.y, b.w, b.h)) {
+          // carve pixel holes aligned to sprite grid
+          const hx = Math.floor((s.x - b.x) / 3) * 3 + b.x - 3;
+          const hy = Math.floor((s.y - b.y) / 3) * 3 + b.y - 6;
+          for (let yy = 0; yy < 6; yy++) for (let xx = 0; xx < 6; xx++) {
+            b.mask.add(`${hx+xx},${hy+yy}`);
+          }
+          s.y = s.v < 0 ? -9999 : 9999;
+        }
+      }
+    }
+    // cleanup
+    for (let i = shots.length - 1; i >= 0; i--) {
+      const s = shots[i];
+      if (s.y < -10 || s.y > canvas.height + 10) shots.splice(i, 1);
+    }
+  }
+
+  // FX
+  function spawnExplosion(x, y) { explosions.push({ x, y, t: 0 }); }
+  function updateFX(dt) {
+    for (const st of stars) {
+      st.y += dt * st.s * 0.25;
+      st.phase += dt * 1.5;
+      if (st.y > canvas.height) { st.y = -2; st.x = rnd(0, canvas.width); }
+    }
+    for (let i = explosions.length - 1; i >= 0; i--) {
+      const e = explosions[i];
+      e.t += dt;
+      if (e.t > 0.35) explosions.splice(i, 1);
+    }
+  }
+
+  // Drawing
+  function drawBackground() {
+    for (const st of stars) {
+      const alpha = 0.35 + 0.35 * Math.sin(st.phase);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = PAL.star;
+      ctx.fillRect(Math.round(st.x), Math.round(st.y), 1, 1);
+    }
+    ctx.globalAlpha = 1;
+  }
+  function drawBunkers() {
+    for (const b of bunkers) {
+      drawSprite(SPRITES.bunker, b.x, b.y, PAL.bunker);
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      for (const key of b.mask) {
+        const [px, py] = key.split(',').map(Number);
+        ctx.fillRect(px, py, 1, 1);
+      }
+      ctx.restore();
+    }
+  }
+  function drawAliens(tms) {
+    const toggle = Math.floor((tms/400) % 2) === 0;
+    for (const a of aliens) {
+      if (!a.alive) continue;
+      drawSprite(toggle ? SPRITES.alienG1 : SPRITES.alienG2, a.x, a.y);
+    }
+  }
+  function drawPlayer() { drawSprite(SPRITES.ship, player.x, player.y); }
+  function drawShots() {
+    ctx.fillStyle = PAL.laser;
+    for (const s of shots) ctx.fillRect(Math.round(s.x)-1, Math.round(s.y)-6, 2, 6);
+  }
+  function drawExplosions() {
+    for (const e of explosions) {
+      const alpha = 1 - (e.t / 0.35);
+      ctx.globalAlpha = alpha;
+      drawSprite(SPRITES.explosion, e.x - (SPRITES.explosion.w*SPRITES.explosion.ts)/2, e.y - (SPRITES.explosion.h*SPRITES.explosion.ts)/2, PAL.flash);
+      ctx.globalAlpha = 1;
+    }
+  }
+  function drawOverlay() {
+    if (!GAME.running) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      labelCenter('Oyun bitti', 24);
+      labelCenter(`Skor: ${GAME.score}  •  En iyi: ${Math.max(BEST, GAME.score)}`, 14, 28);
+      labelCenter('Space ile yeniden başla', 12, 50);
+    } else if (GAME.waveCleared) {
+      labelTop('Dalga temizlendi! Space ile sıradaki dalga', 12);
+    }
+  }
+  function labelCenter(text, size = 14, dy = 0) {
+    ctx.fillStyle = '#e6f0ff';
+    ctx.font = `bold ${size}px ${getComputedStyle(document.documentElement).getPropertyValue('--font')}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(text, canvas.width/2, canvas.height/2 + dy);
+  }
+  function labelTop(text, size = 12) {
+    ctx.fillStyle = '#a7c1ff';
+    ctx.font = `bold ${size}px ${getComputedStyle(document.documentElement).getPropertyValue('--font')}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(text, canvas.width/2, 24);
+  }
+
+  // Loop
+  let prev = now();
+  function loop() {
+    const tms = now();
+    const dt = Math.min(0.033, (tms - prev) / 1000);
+    prev = tms;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawBackground();
+
+    if (GAME.running) {
+      updatePlayer(dt);
+      updateAliens(dt, tms);
+      updateShots(dt);
+      updateFX(dt);
+
+      drawBunkers();
+      drawAliens(tms);
+      drawPlayer();
+      drawShots();
+      drawExplosions();
+
+      if (GAME.waveCleared) {
+        if (keys.has(' ') || keys.has('space')) {
+          keys.delete(' ');
+          GAME.level++;
+          resetLevel(GAME.level);
+          alienBaseSpeed += 2; // gentler increment per wave
+        }
+      }
+    } else {
+      drawBunkers();
+      drawAliens(tms);
+      drawPlayer();
+      drawShots();
+      drawExplosions();
+    }
+
+    drawOverlay();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // Game over / restart
+  function gameOver() {
+    GAME.running = false;
+    const best = safeGetIntLS('best_invaders', 0);
+    const newBest = Math.max(best, GAME.score);
+    safeSetLS('best_invaders', newBest);
+    HUD.setBest(newBest);
+  }
+  window.addEventListener('keydown', (e) => {
+    if (!GAME.running && (e.key === ' ' || e.key.toLowerCase() === 'space')) {
+      GAME.running = true;
+      GAME.score = 0; GAME.lives = 3; GAME.level = 1;
+      HUD.setScore(GAME.score); HUD.setLives(GAME.lives); HUD.setLevel(GAME.level);
+      alienBaseSpeed = 14; alienDir = 1;
+      resetLevel(1);
+    }
+  });
+
+  // Prevent page scroll for arrows/space
+  window.addEventListener('keydown', (e) => {
+    const block = ['ArrowLeft','ArrowRight',' '];
+    if (block.includes(e.key)) e.preventDefault();
+  }, { passive: false });
+</script>
+</body>
+</html>
