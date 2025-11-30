@@ -166,4 +166,26 @@ onAuthStateChanged(auth, async (user) => {
       window.location.href = 'profil.html';
     });
   }
+
+  document.getElementById('saveBtn')?.addEventListener('click', async function() {
+    const newName = document.getElementById('newNameInput')?.value?.trim();
+    if (!newName) return alert('İsim boş olamaz!');
+    // Burada Firestore veya backend'e güncelleme kodunuzu ekleyin
+    alert('İsim güncellendi (örnek)');
+  });
+
+  document.getElementById('saveAvatarBtn')?.addEventListener('click', async function() {
+    const selected = document.querySelector('.avatar-option.selected')?.src;
+    if (!selected) return alert('Lütfen bir avatar seçin!');
+    // Burada Firestore veya backend'e güncelleme kodunuzu ekleyin
+    alert('Avatar güncellendi (örnek)');
+  });
+
+  // Avatar seçimi için örnek:
+  document.querySelectorAll('.avatar-option').forEach(img => {
+    img.addEventListener('click', function() {
+      document.querySelectorAll('.avatar-option').forEach(i => i.classList.remove('selected'));
+      img.classList.add('selected');
+    });
+  });
 });
